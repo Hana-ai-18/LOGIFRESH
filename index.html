@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>LogiFresh — Vận tải lạnh thông minh</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+:root{
+  --g:#0CB87A;--gd:#087A52;--gl:#E8FAF4;
+  --am:#F59E0B;--re:#EF4444;--bl:#3B82F6;--pu:#7C3AED;
+  --bg:#F7F8FA;--card:#fff;--tx:#0F1923;--mu:#6B7280;
+  --bd:#E8EAED;--sw:240px;
+  --sh:0 1px 3px rgba(0,0,0,.06);--shm:0 4px 16px rgba(0,0,0,.09);
+}
+body{font-family:'DM Sans',sans-serif;color:var(--tx);-webkit-font-smoothing:antialiased;background:var(--bg)}
+*{box-sizing:border-box}
+button,select,input,textarea{font-family:'DM Sans',sans-serif;outline:none}
+.mono{font-family:'DM Mono',monospace}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#ddd;border-radius:10px}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.9)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes slideR{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+@keyframes bounceY{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.fade{animation:fadeUp .22s ease}
+.pulse{animation:pulse 1.8s infinite}
+.spin{animation:spin 1s linear infinite}
+
+/* ── SHELL ── */
+#shell{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:var(--sw);background:#fff;border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow:hidden;z-index:50;transition:transform .25s}
+#main{flex:1;height:100vh;overflow-y:auto;background:var(--bg)}
+
+/* ── SIDEBAR ── */
+.sbl{padding:18px 18px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:9px}
+.sbl-mark{width:32px;height:32px;background:var(--tx);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sbl-name{font-weight:800;font-size:16px;letter-spacing:-.4px}
+.sbl-tag{font-size:9px;background:var(--gl);color:var(--gd);padding:2px 6px;border-radius:20px;font-weight:700;letter-spacing:.3px}
+.sbu{padding:12px 16px 10px;border-bottom:1px solid var(--bd)}
+.sba{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sbn{font-size:13px;font-weight:600}
+.sbr{font-size:11px;color:var(--mu);margin-top:1px}
+.sb-nav{flex:1;padding:8px 8px 0;overflow-y:auto}
+.sb-sec{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;padding:10px 10px 4px}
+.sb-btn{width:100%;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;border:none;background:transparent;color:var(--mu);font-size:13px;font-weight:500;margin-bottom:1px;transition:all .12s;text-align:left;cursor:pointer}
+.sb-btn:hover{background:var(--bg);color:var(--tx)}
+.sb-btn.act{background:var(--gl);color:var(--gd);font-weight:600}
+.sb-btn.act svg{color:var(--g)!important}
+.sb-bot{padding:10px 8px;border-top:1px solid var(--bd)}
+.sb-alert{background:var(--re);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:auto}
+
+/* ── MOBILE HEADER ── */
+#mob-hdr{display:none;position:fixed;top:0;left:0;right:0;height:52px;background:#fff;border-bottom:1px solid var(--bd);z-index:200;align-items:center;padding:0 14px;gap:10px}
+#mob-hdr-title{font-weight:700;font-size:15px}
+
+/* ── MOBILE NAV ── */
+#mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--bd);z-index:200;padding:4px 0 env(safe-area-inset-bottom,4px)}
+.mob-nav-inner{display:flex;justify-content:space-around}
+.mob-nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:none;background:transparent;color:var(--mu);font-size:10px;font-weight:500;cursor:pointer;min-height:44px;transition:color .1s;font-family:'DM Sans',sans-serif}
+.mob-nb.act{color:var(--g)}
+
+/* ── SIDEBAR OVERLAY (mobile) ── */
+#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:149}
+
+/* ── PAGE ── */
+.page{padding:24px 28px;animation:fadeUp .2s ease}
+.ph{margin-bottom:20px}
+.pt{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.ps{font-size:13px;color:var(--mu);margin-top:2px}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px 20px}
+.ct{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* ── STAT CARDS ── */
+.sc{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px 16px}
+.sv{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.sl{font-size:12px;color:var(--mu);margin-top:3px}
+.sd{font-size:11px;margin-top:2px;font-weight:500}
+.si{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.vs{display:flex;flex-direction:column;gap:10px}
+.hs{display:flex;align-items:center;gap:8px}
+.sp{flex:1}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+
+/* ── BADGES ── */
+.b{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.b-g{color:#065F46;background:#D1FAE5}.b-a{color:#92400E;background:#FEF3C7}
+.b-r{color:#991B1B;background:#FEF2F2}.b-b{color:#1E40AF;background:#EFF6FF}
+.b-gray{color:var(--mu);background:#F3F4F6}.b-pu{color:#5B21B6;background:#EDE9FE}
+
+/* ── BUTTONS ── */
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+.btn-p{background:var(--g);color:#fff}.btn-p:hover{background:var(--gd)}
+.btn-s{background:var(--bg);color:var(--tx);border:1.5px solid var(--bd)}.btn-s:hover{background:#fff;border-color:#ccc}
+.btn-o{background:transparent;border:1.5px solid var(--g);color:var(--gd)}.btn-o:hover{background:var(--gl)}
+.btn-d{background:var(--tx);color:#fff}.btn-d:hover{opacity:.85}
+.btn-r{background:#EF4444;color:#fff}.btn-r:hover{background:#DC2626}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-fw{width:100%;justify-content:center}
+
+/* ── FORMS ── */
+.lbl{font-size:11px;color:var(--mu);font-weight:500;margin-bottom:4px;display:block}
+.inp{width:100%;padding:9px 11px;border-radius:8px;border:1.5px solid var(--bd);font-size:13px;color:var(--tx);transition:border .12s;background:#fff}
+.inp:focus{border-color:var(--g)}
+.sel{width:100%;padding:9px 11px;border-radius:8px;border:1.5px solid var(--bd);font-size:13px;color:var(--tx);background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;cursor:pointer}
+.sel:focus{border-color:var(--g)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:8px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--mu);border-bottom:1.5px solid var(--bd);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--bg);cursor:pointer}
+
+/* ── PROGRESS ── */
+.prog{background:var(--bd);border-radius:6px;height:6px;overflow:hidden}
+.prog-f{height:100%;border-radius:6px;background:var(--g);transition:width .8s}
+
+/* ── TEMP BAR ── */
+.tb{position:relative;height:7px;background:#f0f0f0;border-radius:4px;margin:6px 0}
+.tb-r{position:absolute;height:100%;border-radius:4px;background:#0CB87A25}
+.tb-d{position:absolute;transform:translateX(-50%);top:-5px;width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:left .5s}
+
+/* ── TRIP CARD ── */
+.tc{background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:13px 15px;transition:border-color .12s;cursor:pointer}
+.tc:hover{border-color:var(--g)}
+.tc.sel{border-color:var(--g);background:var(--gl)}
+
+/* ── LOADING DOTS ── */
+.ldots{display:flex;gap:5px;justify-content:center;padding:20px 0}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--g)}
+.ldot:nth-child(1){animation:bounceY .6s 0s infinite}
+.ldot:nth-child(2){animation:bounceY .6s .13s infinite}
+.ldot:nth-child(3){animation:bounceY .6s .26s infinite}
+
+/* ── NOTIFICATION ── */
+.notif{position:fixed;top:16px;right:16px;background:var(--tx);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;z-index:9999;animation:fadeUp .2s ease;display:flex;align-items:center;gap:8px;box-shadow:var(--shm);max-width:320px}
+.notif-g{background:var(--gd)}.notif-r{background:#B91C1C}.notif-a{background:#D97706}
+
+/* ── MAP ── */
+.leaflet-container{background:#eaeaea!important}
+.leaflet-popup-content-wrapper{border-radius:10px!important;font-family:'DM Sans',sans-serif!important;box-shadow:var(--shm)!important;border:1px solid var(--bd)!important}
+.leaflet-popup-content{margin:11px 13px!important;font-size:13px!important}
+.leaflet-control-zoom{border:1px solid var(--bd)!important;border-radius:8px!important;overflow:hidden;box-shadow:none!important}
+.leaflet-routing-container{display:none!important}
+.mob-vehicle-strip{display:none;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;margin-top:10px}
+
+/* ── BLOCKS ── */
+.blk{background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;padding:11px 13px;font-family:'DM Mono',monospace;font-size:11px}
+.blk.ok{border-color:var(--g);background:var(--gl)}
+.blk.bad{border-color:var(--re);background:#FEF2F2}
+.blk-conn{width:2px;height:12px;background:var(--bd);margin:0 auto}
+.blk-conn.ok{background:var(--g)}
+
+/* ── COMPAT ── */
+.compat-ok{background:var(--gl);border:1px solid #A7F3D0;border-radius:9px;padding:10px 12px;font-size:12px;color:#065F46;font-weight:600;margin-top:8px}
+.compat-no{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:9px;padding:10px 12px;font-size:12px;color:#B91C1C;font-weight:600;margin-top:8px}
+
+/* ── LANDING ── */
+@keyframes heroFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes heroBadge{from{opacity:0;transform:translateY(-8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes floatDot{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.08)}}
+@keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes lineGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+#landing{background:#fff;min-height:100vh;height:auto;overflow-y:auto}
+
+/* NAV */
+.lnav{display:flex;justify-content:space-between;align-items:center;padding:16px 52px;position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:100;border-bottom:1px solid rgba(0,0,0,.06)}
+.lnav-logo{display:flex;align-items:center;gap:9px}
+.lnav-logo-mark{width:34px;height:34px;background:var(--tx);border-radius:9px;display:flex;align-items:center;justify-content:center}
+.lnav-name{font-weight:800;font-size:17px;letter-spacing:-.4px}
+.lnav-btns{display:flex;align-items:center;gap:7px}
+
+/* HERO SECTION */
+.lhero-wrap{position:relative;overflow:hidden;padding:90px 48px 0;background:#fff}
+.lhero-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lhero-blob1{position:absolute;top:-120px;right:-80px;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,#0CB87A14 0%,transparent 70%)}
+.lhero-blob2{position:absolute;bottom:-60px;left:-100px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,#3B82F608 0%,transparent 70%)}
+.lhero-dots{position:absolute;inset:0}
+.lhero-content{position:relative;max-width:780px;margin:0 auto;text-align:center;z-index:1}
+
+.hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 14px 6px 8px;border-radius:50px;border:1.5px solid #0CB87A30;background:linear-gradient(135deg,#E8FAF4,#f0fff8);font-size:12px;font-weight:600;color:var(--gd);margin-bottom:28px;animation:heroBadge .5s ease both;animation-delay:.1s;cursor:default}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
+.hero-badge-flag{font-size:14px}
+
+.lh1{font-family:'Playfair Display',Georgia,serif;font-size:clamp(42px,6.5vw,76px);font-weight:900;line-height:1.04;letter-spacing:-2.5px;margin:0 0 20px;color:var(--tx);animation:heroFadeUp .6s ease both;animation-delay:.2s}
+.lh1 em{font-style:normal;color:var(--g);position:relative;display:inline-block}
+.lh1 em::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:3px;background:var(--g);border-radius:2px;transform:scaleX(0);transform-origin:left;animation:lineGrow .6s ease both;animation-delay:.9s}
+
+.lsub{font-size:16px;color:#4B5563;line-height:1.8;max-width:520px;margin:0 auto 36px;animation:heroFadeUp .6s ease both;animation-delay:.35s}
+
+.hero-btns-wrap{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;animation:heroFadeUp .6s ease both;animation-delay:.5s}
+.btn-hero-primary{background:var(--g);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:7px;transition:all .15s;box-shadow:0 4px 18px #0CB87A40}
+.btn-hero-primary:hover{background:var(--gd);transform:translateY(-1px);box-shadow:0 6px 24px #0CB87A50}
+.btn-hero-sec{background:#fff;color:var(--tx);border:1.5px solid var(--bd);border-radius:10px;padding:13px 26px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+.btn-hero-sec:hover{border-color:#aaa;background:#fafafa;transform:translateY(-1px)}
+.btn-hero-dark{background:var(--tx);color:#fff;border:none;border-radius:10px;padding:13px 22px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+.btn-hero-dark:hover{opacity:.85;transform:translateY(-1px)}
+
+/* TRUST BAR */
+.trust-bar{display:flex;justify-content:center;align-items:center;gap:20px;margin-top:48px;padding:18px 24px;background:var(--bg);border-top:1px solid var(--bd);flex-wrap:wrap;animation:heroFadeUp .6s ease both;animation-delay:.65s}
+.trust-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mu);font-weight:500}
+.trust-dot{width:4px;height:4px;border-radius:50%;background:var(--bd)}
+
+/* STATS */
+.lstats{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)}
+.lstat{padding:28px 24px;text-align:center;border-right:1px solid var(--bd);position:relative;overflow:hidden}
+.lstat::before{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--g);transform:scaleX(0);transform-origin:center;transition:transform .3s}
+.lstat:hover::before{transform:scaleX(1)}
+.lstat:last-child{border-right:none}
+.lsv{font-size:28px;font-weight:800;letter-spacing:-.5px;font-family:'Playfair Display',serif}
+.lsv span{color:var(--g)}
+.lsl{font-size:12px;color:var(--mu);margin-top:3px;font-weight:500}
+
+/* FEATURES */
+.lfeat{padding:72px 52px 80px;max-width:1100px;margin:0 auto}
+.feat-header{text-align:center;margin-bottom:40px}
+.feat-h2{font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,34px);font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.feat-sub{font-size:14px;color:var(--mu)}
+.fc{border:1.5px solid var(--bd);border-radius:14px;padding:22px 20px;transition:all .2s;background:#fff;position:relative;overflow:hidden}
+.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--g);transform:scaleX(0);transform-origin:left;transition:transform .25s}
+.fc:hover{border-color:#c8f0e0;transform:translateY(-3px);box-shadow:0 8px 28px rgba(12,184,122,.1)}
+.fc:hover::before{transform:scaleX(1)}
+.fi{width:42px;height:42px;border-radius:10px;background:var(--gl);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.fc-title{font-weight:700;font-size:14px;margin-bottom:6px;letter-spacing:-.2px}
+.fc-desc{font-size:13px;color:var(--mu);line-height:1.65}
+
+/* CTA */
+.lcta{background:linear-gradient(135deg,#0F1923 0%,#1a3a2a 100%);margin:0 52px 64px;border-radius:20px;padding:52px 48px;text-align:center;position:relative;overflow:hidden}
+.lcta::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,#0CB87A20,transparent 70%);pointer-events:none}
+.lcta::after{content:'';position:absolute;bottom:-40px;left:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#3B82F610,transparent 70%);pointer-events:none}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  :root{--sw:200px}
+}
+@media(max-width:768px){
+  html,body{overflow:auto}
+  #shell{flex-direction:column;height:auto;min-height:100vh;overflow:visible}
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:150;width:260px!important}
+  #sidebar.open{transform:translateX(0)}
+  #sb-overlay{display:none}
+  #sb-overlay.show{display:block}
+  #main{height:auto;min-height:100vh;overflow-y:visible;padding-top:52px;padding-bottom:68px}
+  #mob-hdr{display:flex}
+  #mob-nav{display:block}
+  .page{padding:14px 12px}
+  .pt{font-size:17px}
+  .lnav{padding:12px 16px}
+  .lnav .nav-hide{display:none}
+  .lhero-wrap{padding:52px 16px 0}
+  .lh1{letter-spacing:-1.2px;font-size:clamp(36px,9vw,52px)}
+  .lsub{font-size:14px}
+  .trust-bar{gap:12px;padding:14px 12px}
+  .trust-dot{display:none}
+  .lstats{grid-template-columns:1fr 1fr}
+  .lstat:nth-child(2){border-right:none}
+  .lstat:nth-child(3){border-top:1px solid var(--bd);border-right:none}
+  .lstat:nth-child(4){border-top:1px solid var(--bd)}
+  .lfeat{padding:36px 16px 52px}
+  .lcta{margin:0 16px 40px;padding:32px 20px;border-radius:14px}
+  .lcta::before,.lcta::after{display:none}
+  .hero-btns-wrap{flex-direction:column;align-items:stretch;padding:0 20px}
+  .btn-hero-primary,.btn-hero-sec,.btn-hero-dark{text-align:center;justify-content:center}
+  .g4,.g6{grid-template-columns:1fr 1fr}
+  .g5{grid-template-columns:1fr 1fr}
+  .map-overlay{display:none!important}
+  .mob-vehicle-strip{display:flex!important}
+  .notif{top:auto;bottom:76px;left:10px;right:10px;max-width:none}
+  .hero-btns{flex-direction:column;align-items:stretch}
+  .hero-btns .btn{text-align:center;justify-content:center}
+  .tbl-wrap{overflow-x:auto}
+}
+@media(max-width:420px){
+  .g4,.g5,.g6{grid-template-columns:1fr 1fr}
+  .lsv{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sb-overlay" onclick="closeSidebar()"></div>
+
+<script>
+const el=id=>document.getElementById(id);
+const $$=q=>document.querySelectorAll(q);
+const fmt=n=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(n);
+const fmtN=n=>new Intl.NumberFormat('vi-VN').format(n);
+
+// ─── STATE ───────────────────────────────────────────────────────
+let S={
+  page:'landing', role:null, nav:'dashboard',
+  map:null, mapMarkers:{}, routeCtrl:null,
+  tempInt:null, notifTm:null,
+  myTripId:'CM-001247',
+  adminTab:'overview',
+  selectedOrder:null,
+};
+
+// ─── GOODS DATA (Nông Thủy Hải Sản) ─────────────────────────────
+const GOODS={
+  // THỦY SẢN ĐÔNG LẠNH
+  'Tôm sú đông lạnh':     {cat:'Thủy sản',temp:[-22,-18],unit:'kg',note:'Đông IQF, xuất khẩu'},
+  'Tôm thẻ đông lạnh':    {cat:'Thủy sản',temp:[-22,-18],unit:'kg',note:'Size 30/40, 40/50'},
+  'Cá tra fillet đông':   {cat:'Thủy sản',temp:[-20,-18],unit:'kg',note:'Fillet, không xương'},
+  'Cá basa fillet':       {cat:'Thủy sản',temp:[-20,-18],unit:'kg',note:'Đông block'},
+  'Mực đông lạnh':        {cat:'Thủy sản',temp:[-22,-18],unit:'kg',note:'Mực ống, mực nang'},
+  'Bạch tuộc đông':       {cat:'Thủy sản',temp:[-22,-18],unit:'kg',note:'Nguyên con, làm sạch'},
+  'Cua biển sống':        {cat:'Thủy sản',temp:[5,12],unit:'con',note:'Bảo quản sống, thoáng khí'},
+  'Tôm hùm sống':         {cat:'Thủy sản',temp:[5,12],unit:'con',note:'Không để đông'},
+  'Cá ngừ đại dương':     {cat:'Thủy sản',temp:[-60,-50],unit:'kg',note:'Super frozen xuất khẩu'},
+  'Cá hồi tươi':          {cat:'Thủy sản',temp:[-2,2],unit:'kg',note:'Ướp đá, 24h'},
+  'Hàu sống':             {cat:'Thủy sản',temp:[0,6],unit:'con',note:'Cần thoáng khí'},
+  // NÔNG SẢN
+  'Sầu riêng Ri6':        {cat:'Nông sản',temp:[-20,-16],unit:'kg',note:'Đông nguyên múi'},
+  'Sầu riêng Monthong':   {cat:'Nông sản',temp:[-20,-16],unit:'kg',note:'Nhập khẩu Thái'},
+  'Xoài cát Hòa Lộc':    {cat:'Nông sản',temp:[10,14],unit:'kg',note:'Xuất khẩu Nhật, Hàn'},
+  'Thanh long ruột đỏ':   {cat:'Nông sản',temp:[5,10],unit:'kg',note:'VietGAP, GlobalGAP'},
+  'Nhãn lồng Hưng Yên':  {cat:'Nông sản',temp:[1,5],unit:'kg',note:'Mùa vụ tháng 7-8'},
+  'Vải thiều Bắc Giang':  {cat:'Nông sản',temp:[1,5],unit:'kg',note:'Chỉ dẫn địa lý'},
+  'Chôm chôm Bến Tre':    {cat:'Nông sản',temp:[8,12],unit:'kg',note:'Đặc sản Nam Bộ'},
+  'Bơ Booth Đắk Lắk':    {cat:'Nông sản',temp:[5,10],unit:'kg',note:'Chín sau thu hoạch'},
+  'Dưa hấu không hạt':    {cat:'Nông sản',temp:[10,15],unit:'quả',note:'Bảo quản mát'},
+  'Khoai lang Nhật':      {cat:'Nông sản',temp:[12,16],unit:'kg',note:'Xuất khẩu Đài Loan'},
+  'Nấm kim châm':         {cat:'Nông sản',temp:[2,5],unit:'kg',note:'Bảo quản lạnh 2-5°C'},
+  'Rau muống sạch':       {cat:'Nông sản',temp:[4,8],unit:'kg',note:'Rau VietGAP'},
+  'Cải thảo':             {cat:'Nông sản',temp:[0,4],unit:'kg',note:'Xuất khẩu Hàn Quốc'},
+  // GIA SÚC GIA CẦM
+  'Thịt heo mảnh':        {cat:'Gia súc',temp:[0,4],unit:'kg',note:'HACCP, VietGAP'},
+  'Thịt bò Úc đông':      {cat:'Gia súc',temp:[-20,-18],unit:'kg',note:'Nhập khẩu, đông block'},
+  'Thịt gà lạnh':         {cat:'Gia súc',temp:[0,4],unit:'kg',note:'Giết mổ, ướp lạnh 24h'},
+  'Lòng heo đông lạnh':   {cat:'Gia súc',temp:[-18,-15],unit:'kg',note:'Đông IQF'},
+  'Trứng gà công nghiệp': {cat:'Gia súc',temp:[8,15],unit:'quả',note:'Không rửa, bảo quản khô'},
+  // SỮA & CHẾ BIẾN
+  'Sữa tươi thanh trùng': {cat:'Sữa & CB',temp:[2,6],unit:'lít',note:'Hạn dùng 7 ngày'},
+  'Phô mai tươi':         {cat:'Sữa & CB',temp:[2,6],unit:'kg',note:'Đông lạnh hoặc mát'},
+  'Bơ lạt nhập khẩu':    {cat:'Sữa & CB',temp:[-18,-15],unit:'kg',note:'Đông block 25kg'},
+  // NƯỚC GIẢI KHÁT
+  'Nước dừa tươi':        {cat:'Nước uống',temp:[2,8],unit:'lít',note:'Đóng túi, 3 ngày'},
+  'Nước ép trái cây':     {cat:'Nước uống',temp:[2,8],unit:'lít',note:'Thanh trùng, đóng chai'},
+};
+
+// Nhóm theo temp để tự động kiểm tra tương thích
+function tempOk(t1,t2){
+  const mid1=(t1[0]+t1[1])/2, mid2=(t2[0]+t2[1])/2;
+  return Math.abs(mid1-mid2)<8;
+}
+
+// ─── VEHICLES ────────────────────────────────────────────────────
+const VEHICLES=[
+  {id:'V001',driver:'Nguyễn Văn Hùng',plate:'51C-88821',goods:'Tôm sú đông lạnh',temp:-20.1,lo:-22,hi:-18,lat:10.7769,lng:106.7009,status:'active',score:4.8,route:'TP.HCM → Cần Thơ',color:'#0CB87A',tripId:'CM-001247',phone:'0901234567'},
+  {id:'V002',driver:'Trần Thị Mai',plate:'51B-12234',goods:'Cá hồi tươi',temp:0.8,lo:-2,hi:2,lat:10.8231,lng:106.6297,status:'active',score:4.9,route:'Hà Nội → Hải Phòng',color:'#3B82F6',tripId:'CM-001249',phone:'0912345678'},
+  {id:'V003',driver:'Lê Minh Đức',plate:'51F-55678',goods:'Thịt heo mảnh',temp:5.9,lo:0,hi:4,lat:10.7453,lng:106.6298,status:'alert',score:4.1,route:'Bình Dương → Đà Nẵng',color:'#EF4444',tripId:'CM-001250',phone:'0923456789'},
+  {id:'V004',driver:'Phạm Văn An',plate:'50A-77890',goods:'Sầu riêng Ri6',temp:-19.5,lo:-20,hi:-16,lat:10.8010,lng:106.7180,status:'active',score:4.6,route:'Cần Thơ → TP.HCM',color:'#F59E0B',tripId:'CM-001248',phone:'0934567890'},
+  {id:'V005',driver:'Võ Thị Hoa',plate:'51A-66321',goods:'Xoài cát Hòa Lộc',temp:12.1,lo:10,hi:14,lat:10.7620,lng:106.6800,status:'active',score:4.7,route:'Tiền Giang → TP.HCM',color:'#7C3AED',tripId:'CM-001251',phone:'0945678901'},
+];
+
+const TRIPS=[
+  {id:'CM-001247',from:'TP.HCM (Quận 8)',to:'Cần Thơ (Ninh Kiều)',goods:'Tôm sú đông lạnh',weight:3.2,temp:'-18 đến -22°C',price:2800000,status:'active',driver:'Nguyễn Văn Hùng',score:4.8,progress:62,tempNow:-20.1,lo:-22,hi:-18,vehicleId:'V001',shipperName:'Tiến Phát Export',shipperPhone:'0909111222',pickup:'10.7400,106.6600',dropoff:'10.0452,105.7469'},
+  {id:'CM-001248',from:'Cần Thơ (Bình Thủy)',to:'TP.HCM (Bình Dương)',goods:'Sầu riêng Ri6',weight:2.4,temp:'-16 đến -20°C',price:3600000,status:'active',driver:'Phạm Văn An',score:4.6,progress:38,tempNow:-19.5,lo:-20,hi:-16,vehicleId:'V004',shipperName:'Vườn Sầu Tám Kiên',shipperPhone:'0910222333'},
+  {id:'CM-001249',from:'Hà Nội (Hoàn Kiếm)',to:'Hải Phòng (Lê Chân)',goods:'Cá hồi tươi',weight:0.8,temp:'-2 đến 2°C',price:5200000,status:'active',driver:'Trần Thị Mai',score:4.9,progress:75,tempNow:0.8,lo:-2,hi:2,vehicleId:'V002',shipperName:'SeaFood Premium HN'},
+  {id:'CM-001250',from:'Bình Dương (Thủ Dầu Một)',to:'Đà Nẵng (Hải Châu)',goods:'Thịt heo mảnh',weight:4.1,temp:'0 đến 4°C',price:7800000,status:'alert',driver:'Lê Minh Đức',score:4.1,progress:44,tempNow:5.9,lo:0,hi:4,vehicleId:'V003',shipperName:'Công ty Thực Phẩm Tín'},
+  {id:'CM-001251',from:'Tiền Giang (Mỹ Tho)',to:'TP.HCM (Bình Chánh)',goods:'Xoài cát Hòa Lộc',weight:1.8,temp:'10 đến 14°C',price:1400000,status:'active',driver:'Võ Thị Hoa',score:4.7,progress:85,tempNow:12.1,lo:10,hi:14,vehicleId:'V005',shipperName:'Hợp tác xã Xoài TG'},
+  {id:'CM-001246',from:'Đà Lạt',to:'TP.HCM',goods:'Nấm kim châm',weight:0.6,temp:'2 đến 5°C',price:980000,status:'completed',driver:'Nguyễn Văn Hùng',score:4.8,progress:100,tempNow:3.2,lo:2,hi:5,vehicleId:null,shipperName:'Farm Nấm Sạch Đà Lạt'},
+];
+
+const CUSTOMERS=[
+  {id:'KH-001',name:'Tiến Phát Export',phone:'0909111222',email:'tpexport@gmail.com',trips:8,spent:22400000,status:'active',tier:'Vàng'},
+  {id:'KH-002',name:'SeaFood Premium HN',phone:'0912222333',email:'sfpremium@vn',trips:5,spent:18600000,status:'active',tier:'Bạc'},
+  {id:'KH-003',name:'Công ty Thực Phẩm Tín',phone:'0923333444',email:'tptin@vn',trips:12,spent:41200000,status:'active',tier:'Bạch Kim'},
+  {id:'KH-004',name:'Hợp tác xã Xoài TG',phone:'0934444555',email:'xoaiTG@vn',trips:3,spent:5800000,status:'active',tier:'Thành viên'},
+  {id:'KH-005',name:'Farm Nấm Sạch Đà Lạt',phone:'0945555666',email:'namdl@vn',trips:6,spent:11200000,status:'inactive',tier:'Bạc'},
+];
+
+const DRIVERS=[
+  {id:'D001',name:'Nguyễn Văn Hùng',phone:'0901234567',plate:'51C-88821',score:4.8,trips:127,status:'driving',tier:'Vàng'},
+  {id:'D002',name:'Trần Thị Mai',phone:'0912345678',plate:'51B-12234',score:4.9,trips:89,status:'driving',tier:'Bạch Kim'},
+  {id:'D003',name:'Lê Minh Đức',phone:'0923456789',plate:'51F-55678',score:4.1,trips:64,status:'alert',tier:'Thành viên'},
+  {id:'D004',name:'Phạm Văn An',phone:'0934567890',plate:'50A-77890',score:4.6,trips:103,status:'driving',tier:'Bạc'},
+  {id:'D005',name:'Võ Thị Hoa',phone:'0945678901',plate:'51A-66321',score:4.7,trips:78,status:'driving',tier:'Bạc'},
+  {id:'D006',name:'Đinh Quang Minh',phone:'0956789012',plate:'51G-99123',score:4.5,trips:56,status:'available',tier:'Thành viên'},
+];
+
+const PASSPORTS=[
+  {id:'CP-001247',goods:'Tôm sú đông lạnh',route:'TP.HCM → Cần Thơ',date:'21/05/2026',driver:'Nguyễn Văn Hùng',status:'verified',minT:-21.2,avgT:-20.1,maxT:-19.2,lo:-22,hi:-18,violations:0,hash:'0x3fa7c1e92d8b4a05',temps:[-20.3,-20.1,-19.8,-20.2,-20.5,-20.1,-19.9,-20.3,-20.1,-20.0,-20.2,-19.9]},
+  {id:'CP-001244',goods:'Cá hồi tươi',route:'HN → Hải Phòng',date:'20/05/2026',driver:'Trần Thị Mai',status:'verified',minT:-1.8,avgT:0.8,maxT:1.9,lo:-2,hi:2,violations:0,hash:'0x9b2d3f7e1c8a0456',temps:[0.2,0.8,1.1,0.6,0.9,1.2,0.8,0.5,0.7,0.8,1.0,0.6]},
+  {id:'CP-001241',goods:'Thịt heo mảnh',route:'BD → Đà Nẵng',date:'19/05/2026',driver:'Lê Minh Đức',status:'alert',minT:1.2,avgT:4.9,maxT:8.1,lo:0,hi:4,violations:3,hash:'0xd4e1f892b3c70a1f',temps:[1.1,1.8,2.1,2.8,4.2,6.4,8.1,6.8,5.2,4.0,2.9,1.7]},
+];
+
+// ─── ICONS ───────────────────────────────────────────────────────
+const I={
+  truck:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+  map:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
+  thermo:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>`,
+  shield:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  chart:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+  star:`<svg width="W" height="W" viewBox="0 0 24 24" fill="C" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>`,
+  coin:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M9 10h6"/></svg>`,
+  users:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
+  pack:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>`,
+  check:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`,
+  warn:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/></svg>`,
+  logout:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>`,
+  bolt:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M13 2L4.5 13H11l-2 9L19 11H13z"/></svg>`,
+  admin:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
+  refresh:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`,
+  pin:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  phone:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.26 12a19.79 19.79 0 01-3.07-8.67A2 2 0 012.18 1.29h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.54a16 16 0 006.29 6.29l1.62-1.62a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`,
+  eye:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  qr:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="6" height="6"/><rect x="15" y="3" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><path d="M21 15h-3v3m0 3h3M15 15v3"/></svg>`,
+  clock:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l3 3"/></svg>`,
+  nav:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`,
+  fish:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M2 12C5 7 9 4 12 4c5 0 9 4 9 8s-4 8-9 8c-3 0-7-3-10-8z"/><path d="M7 9.5a.5.5 0 110-1 .5.5 0 010 1z" fill="C"/></svg>`,
+  leaf:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2" stroke-linecap="round"><path d="M17 8C8 10 5.9 16.17 3.82 19.82c.01.01 5.18-3.83 13.18-3.82C23 16 23 8 23 8s-4 0-6 0zM3.82 19.82C3 17 4 12 7 10"/></svg>`,
+};
+function ic(name,color='currentColor',size=16){
+  return (I[name]||'').replace(/W/g,size).replace(/C/g,color);
+}
+
+// ─── SPARKLINE ───────────────────────────────────────────────────
+function spark(data,lo,hi,w=200,h=48){
+  const mn=lo-2,mx=hi+2,pad=5;
+  const x=i=>pad+(i/(data.length-1))*(w-2*pad);
+  const y=v=>h-pad-((v-mn)/(mx-mn))*(h-2*pad);
+  const pts=data.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const ok=data.every(v=>v>=lo&&v<=hi);
+  const rh=y(lo)-y(hi);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="max-width:100%">
+    <rect x="${pad}" y="${y(hi).toFixed(1)}" width="${w-2*pad}" height="${rh.toFixed(1)}" fill="#0CB87A18" rx="2"/>
+    <polyline points="${pts}" fill="none" stroke="${ok?'#0CB87A':'#EF4444'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    ${data.map((v,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.3" fill="${v>=lo&&v<=hi?'#0CB87A':'#EF4444'}"/>`).join('')}
+  </svg>`;
+}
+
+function tempBar(val,lo,hi){
+  const range=(hi+5)-(lo-5);
+  const pLo=((lo-(lo-5))/range)*100, pHi=((hi-(lo-5))/range)*100;
+  const pVal=Math.min(Math.max(((val-(lo-5))/range)*100,2),98);
+  const ok=val>=lo&&val<=hi;
+  return `<div class="tb"><div class="tb-r" style="left:${pLo}%;width:${pHi-pLo}%"></div><div class="tb-d" style="left:${pVal}%;background:${ok?'#0CB87A':'#EF4444'}"></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mu)"><span>${lo}°C</span><span style="color:${ok?'var(--gd)':'#B91C1C'};font-weight:600">${val}°C</span><span>${hi}°C</span></div>`;
+}
+
+function bd(txt,t='gray'){return `<span class="b b-${t}">${txt}</span>`;}
+function stars(n){return `<span style="color:var(--am);font-size:11px">${ic('star','var(--am)',11)}</span><span style="font-size:12px;font-weight:600;margin-left:2px">${n}</span>`;}
+
+function notify(msg,t=''){
+  clearTimeout(S.notifTm);
+  document.querySelector('.notif')?.remove();
+  const d=document.createElement('div');
+  d.className=`notif${t?` notif-${t}`:''}`;
+  d.innerHTML=msg;
+  document.body.appendChild(d);
+  S.notifTm=setTimeout(()=>d.remove(),3500);
+}
+
+function genTempHist(cur,lo,hi,n=12){
+  const a=[];let t=cur;
+  for(let i=0;i<n;i++){t+=(Math.random()-.5)*.4;t=Math.max(lo-.5,Math.min(hi+.8,t));a.unshift(parseFloat(t.toFixed(1)));}
+  return a;
+}
+
+// ETA calculation based on distance
+function calcETA(fromCoords, toCoords){
+  const R=6371,lat1=fromCoords[0]*Math.PI/180,lat2=toCoords[0]*Math.PI/180;
+  const dLat=(toCoords[0]-fromCoords[0])*Math.PI/180,dLon=(toCoords[1]-fromCoords[1])*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  const dist=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  const speed=45; // avg cold truck km/h in Vietnam
+  const mins=Math.round((dist/speed)*60);
+  if(mins<60) return {str:mins+'p',mins};
+  return {str:Math.floor(mins/60)+'h'+(mins%60>0?` ${mins%60}p`:''),mins};
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────
+function render(){
+  if(S.page==='landing'){renderLanding();return;}
+  renderApp();
+}
+
+// ── LANDING ──────────────────────────────────────────────────────
+function renderLanding(){
+  document.body.style.overflow='auto';
+  el('app').innerHTML=`
+  <div id="landing">
+
+    <!-- NAV -->
+    <nav class="lnav">
+      <div class="lnav-logo">
+        <div class="lnav-logo-mark">${ic('truck','#fff',15)}</div>
+        <span class="lnav-name">LogiFresh</span>
+        <span class="sbl-tag">BETA</span>
+      </div>
+      <div class="lnav-btns">
+        <button class="btn btn-s btn-sm" onclick="login('shipper')">Đăng nhập</button>
+        <button class="btn btn-d btn-sm nav-hide" onclick="login('admin')">Quản lý</button>
+        <button class="btn btn-p btn-sm" onclick="login('driver')">Tài xế đăng ký</button>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <div class="lhero-wrap">
+      <div class="lhero-bg">
+        <div class="lhero-blob1"></div>
+        <div class="lhero-blob2"></div>
+        <!-- Decorative dots grid -->
+        <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.4" xmlns="http://www.w3.org/2000/svg">
+          ${Array.from({length:12},(_,row)=>Array.from({length:20},(_,col)=>`<circle cx="${col*80+40}" cy="${row*70+40}" r="1.5" fill="#0CB87A" opacity="${Math.random()>.7?'.6':'.15'}"/>`).join('')).join('')}
+        </svg>
+      </div>
+
+      <div class="lhero-content">
+        <!-- Badge -->
+        <div class="hero-badge">
+          <div class="hero-badge-dot"></div>
+          <span class="hero-badge-flag">🇻🇳</span>
+          <span>Nền tảng vận tải lạnh nông thủy hải sản Việt Nam</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="lh1">Vận chuyển lạnh<br/><em>thông minh hơn.</em></h1>
+
+        <!-- Subtext -->
+        <p class="lsub">Kết nối doanh nghiệp nông thủy hải sản với tài xế xe lạnh uy tín. AI tối ưu tuyến đường, IoT giám sát nhiệt độ, Blockchain bảo chứng hàng hóa.</p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-btns-wrap">
+          <button class="btn-hero-primary" onclick="login('shipper')">
+            ${ic('truck','#fff',16)} Gửi hàng ngay →
+          </button>
+          <button class="btn-hero-sec" onclick="login('driver')">
+            ${ic('star','var(--am)',15)} Đăng ký làm tài xế
+          </button>
+          
+        </div>
+
+        <!-- Trust bar -->
+        <div class="trust-bar">
+          ${['✓ Không phí ẩn','✓ Thanh toán 24h','✓ Cold Passport mỗi chuyến','✓ Hỗ trợ 24/7','✓ HACCP ready'].map((t,i,a)=>`
+            <span class="trust-item">${t}</span>${i<a.length-1?'<span class="trust-dot"></span>':''}`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="lstats">
+      ${[
+        ['300+','Tài xế hoạt động','Toàn quốc'],
+        ['99.2%','Giữ nhiệt độ','SLA cam kết'],
+        ['24h','Thanh toán','Sau giao hàng'],
+        ['35+','Loại hàng lạnh','Nông thủy sản'],
+      ].map(([v,l,s])=>`
+        <div class="lstat">
+          <div class="lsv"><span>${v}</span></div>
+          <div class="lsl">${l}</div>
+          <div style="font-size:11px;color:var(--g);margin-top:3px;font-weight:500">${s}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- FEATURES -->
+    <div class="lfeat">
+      <div class="feat-header">
+        <h2 class="feat-h2">Tại sao chọn LogiFresh?</h2>
+        <p class="feat-sub">Chuyên biệt cho nông — thủy — hải sản Việt Nam</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px">
+        ${[
+          {i:'fish',t:'Booking thông minh',d:'AI tự ghép đơn tương thích nhiệt độ, tối ưu tuyến đường real-time'},
+          {i:'thermo',t:'IoT 2 lớp',d:'Giám sát nhiệt độ mỗi 30 giây, cảnh báo vượt ngưỡng tức thì'},
+          {i:'bolt',t:'Backhaul Optimizer',d:'Không chạy xe rỗng — tự tìm hàng chiều về, tăng thu nhập 30%'},
+          {i:'shield',t:'Cold Passport',d:'Blockchain bất biến — bằng chứng pháp lý nhiệt độ toàn hành trình'},
+          {i:'coin',t:'24h Fast Pay',d:'Thanh toán trong 24h sau khi IoT xác nhận giao thành công'},
+          {i:'leaf',t:'35+ loại hàng',d:'Từ tôm đông, cá hồi, đến xoài, sầu riêng — quy trình riêng từng loại'},
+        ].map(f=>`
+          <div class="fc">
+            <div class="fi">${ic(f.i,'var(--g)',20)}</div>
+            <div class="fc-title">${f.t}</div>
+            <div class="fc-desc">${f.d}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="lcta">
+      <div style="position:relative;z-index:1">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#0CB87A22;border:1px solid #0CB87A44;border-radius:50px;padding:4px 12px;font-size:12px;color:#A7F3D0;font-weight:600;margin-bottom:16px">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--g);display:inline-block" class="pulse"></span>
+          300+ tài xế đang hoạt động ngay lúc này
+        </div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,32px);font-weight:800;color:#fff;margin-bottom:10px;letter-spacing:-.5px">Sẵn sàng bắt đầu?</h3>
+        <p style="color:#ffffff70;margin-bottom:24px;font-size:14px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.7">300+ tài xế và 50+ doanh nghiệp nông thủy sản đang tin dùng LogiFresh mỗi ngày</p>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+          <button class="btn-hero-primary" onclick="login('shipper')" style="box-shadow:none">Bắt đầu miễn phí →</button>
+           
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+function login(role){
+  document.body.style.overflow='hidden';
+  S.role=role; S.page='app'; S.nav='dashboard';
+  render(); startTempSim();
+}
+function logout(){
+  S.page='landing'; S.role=null;
+  clearInterval(S.tempInt);
+  if(S.map){S.map.remove();S.map=null;}
+  render();
+}
+
+// ── APP SHELL ────────────────────────────────────────────────────
+function renderApp(){
+  const isA=S.role==='admin', isDr=S.role==='driver', isSh=S.role==='shipper';
+  const navMap={
+    driver:[{id:'dashboard',lbl:'Dashboard',i:'chart'},{id:'map',lbl:'Bản đồ',i:'map'},{id:'orders',lbl:'Chuyến',i:'pack'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
+    shipper:[{id:'dashboard',lbl:'Đặt hàng',i:'truck'},{id:'map',lbl:'Theo dõi',i:'map'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
+    admin:[{id:'dashboard',lbl:'Tổng quan',i:'chart'},{id:'map',lbl:'Fleet Map',i:'map'},{id:'orders',lbl:'Đơn hàng',i:'pack'},{id:'customers',lbl:'Khách hàng',i:'users'},{id:'drivers',lbl:'Tài xế',i:'truck'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
+  };
+  const navItems=navMap[S.role]||navMap.shipper;
+  const ux={driver:{name:'Nguyễn Văn Hùng',role:'Tài xế · 4.8★',color:'#0CB87A'},shipper:{name:'Tiến Phát Export',role:'Người gửi hàng',color:'#3B82F6'},admin:{name:'Ops Manager',role:'Quản trị hệ thống',color:'#7C3AED'}};
+  const u=ux[S.role];
+  const mobNav=navItems.slice(0,isA?5:4);
+  const pageTitle={dashboard:'Tổng quan',map:'Bản đồ',orders:isA?'Đơn hàng':'Chuyến của tôi',customers:'Khách hàng',drivers:'Tài xế',passport:'Cold Passport',admin:'Ops Center'}[S.nav]||'LogiFresh';
+
+  el('app').innerHTML=`
+    <div id="mob-hdr">
+      <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex">${ic('admin','var(--mu)',20)}</button>
+      <span id="mob-hdr-title">${pageTitle}</span>
+      <div class="sp"></div>
+      <div class="sba" style="background:${u.color};width:28px;height:28px;font-size:11px">${u.name.charAt(0)}</div>
+    </div>
+
+    <div id="mob-nav">
+      <div class="mob-nav-inner">
+        ${mobNav.map(n=>`<button class="mob-nb ${S.nav===n.id?'act':''}" onclick="setNav('${n.id}')">${ic(n.i,S.nav===n.id?'var(--g)':'var(--mu)',22)}<span>${n.lbl}</span></button>`).join('')}
+        ${isA?`<button class="mob-nb ${S.nav==='customers'?'act':''}" onclick="setNav('customers')">${ic('users',S.nav==='customers'?'var(--g)':'var(--mu)',22)}<span>KH</span></button>`:''}
+      </div>
+    </div>
+
+    <div id="shell">
+      <div id="sidebar">
+        <div class="sbl">
+          <div class="sbl-mark">${ic('truck','#fff',14)}</div>
+          <span class="sbl-name">LogiFresh</span>
+          ${isA?`<span class="sbl-tag">ADMIN</span>`:''}
+        </div>
+        <div class="sbu">
+          <div class="hs" style="gap:8px">
+            <div class="sba" style="background:${u.color}">${u.name.charAt(0)}</div>
+            <div><div class="sbn">${u.name}</div><div class="sbr">${u.role}</div></div>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <div class="sb-sec">Menu</div>
+          ${navItems.map(n=>`<button class="sb-btn ${S.nav===n.id?'act':''}" onclick="setNav('${n.id}')">${ic(n.i,S.nav===n.id?'var(--g)':'var(--mu)')} ${n.lbl}</button>`).join('')}
+          ${!isA?`<div class="sb-sec" style="margin-top:6px">Hệ thống</div><button class="sb-btn ${S.nav==='admin'?'act':''}" onclick="setNav('admin')">${ic('admin',S.nav==='admin'?'var(--g)':'var(--mu)')} Ops Center</button>`:``}
+        </nav>
+        <div class="sb-bot">
+          <button class="sb-btn" onclick="logout()">${ic('logout','var(--mu)')} Đăng xuất</button>
+        </div>
+      </div>
+      <div id="main">
+        <div id="pc" class="fade"></div>
+      </div>
+    </div>`;
+
+  renderPage();
+}
+
+function toggleSidebar(){
+  const sb=el('sidebar'), ov=el('sb-overlay');
+  sb.classList.toggle('open'); ov.classList.toggle('show');
+}
+function closeSidebar(){el('sidebar')?.classList.remove('open');el('sb-overlay')?.classList.remove('show');}
+
+function setNav(n){
+  S.nav=n; closeSidebar();
+  if(S.map){S.map.remove();S.map=null;}
+  renderApp();
+  if(n==='map'||n==='admin') setTimeout(initMap,120);
+}
+
+function renderPage(){
+  const p=el('pc'); if(!p) return;
+  if(S.nav==='dashboard'&&S.role==='driver') p.innerHTML=driverDB();
+  else if(S.nav==='dashboard'&&S.role==='shipper') p.innerHTML=shipperDB();
+  else if(S.nav==='dashboard'&&S.role==='admin') p.innerHTML=adminDB();
+  else if(S.nav==='map') p.innerHTML=mapPage();
+  else if(S.nav==='orders') p.innerHTML=ordersPage();
+  else if(S.nav==='passport') p.innerHTML=passportPage();
+  else if(S.nav==='customers') p.innerHTML=customersPage();
+  else if(S.nav==='drivers') p.innerHTML=driversPage();
+  else if(S.nav==='admin') p.innerHTML=opsCenter();
+  attachEv();
+}
+
+// ── DRIVER DASHBOARD ─────────────────────────────────────────────
+function driverDB(){
+  const trip=TRIPS[0];
+  const temps=[-20.3,-20.1,-19.8,-20.2,-20.5,-20.1,-19.9,-20.3,-20.1,-20.0];
+  const eta=calcETA([10.7400,106.6600],[10.0452,105.7469]);
+  return `<div class="page">
+    <div class="ph"><div class="hs">
+      <div><div class="pt">Xin chào, Nguyễn Văn Hùng 👋</div>
+        <div class="hs mt8" style="gap:6px">${bd('🏆 Tài xế Vàng','a')} ${bd('● IoT kết nối','g')} <span style="font-size:12px;color:var(--mu)">51C-88821</span></div>
+      </div>
+      <div class="sp"></div>
+      <div>${stars(4.8)}</div>
+    </div></div>
+
+    <div class="g4 mb12">
+      ${[['Tháng này',fmt(12800000),'var(--g)','coin','+14%'],['Tổng chuyến','127','#3B82F6','truck','127 hoàn thành'],['Cold Score','4.8/5','var(--am)','star','Top 8%'],['Tổng thu',fmt(38500000),'var(--gd)','chart','Tích lũy']].map(([l,v,c,i,s])=>`
+        <div class="sc"><div class="si" style="background:${c}18">${ic(i,c,17)}</div><div class="sv" style="color:${c}">${v}</div><div class="sl">${l}</div><div class="sd" style="color:${c}">${s}</div></div>`).join('')}
+    </div>
+
+    <div class="g2">
+      <div class="vs">
+        <div class="card">
+          <div class="ct">${ic('truck','var(--g)')} Chuyến đang chạy ${bd('● Live','g')}</div>
+          <div style="font-size:13px;color:var(--mu);margin-bottom:3px">${trip.from} → ${trip.to}</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:12px">${trip.goods} · ${trip.weight}T · ${trip.temp}</div>
+          <div class="hs mb8" style="font-size:12px;color:var(--mu)">
+            ${ic('clock','var(--mu)',13)} ETA còn: <strong style="color:var(--tx)">${eta.str}</strong>
+            <div class="sp"></div>${ic('pin','var(--mu)',13)} 62% hành trình
+          </div>
+          <div class="prog mb8"><div class="prog-f" style="width:62%"></div></div>
+          <div style="background:var(--bg);border-radius:9px;padding:12px">
+            <div class="hs mb6"><span style="font-size:12px;font-weight:600">${ic('thermo','var(--g)')} Nhiệt độ</span><div class="sp"></div><span id="lt" style="font-size:20px;font-weight:700;color:var(--g)">${trip.tempNow}°C</span></div>
+            ${tempBar(trip.tempNow,trip.lo,trip.hi)}
+            <div style="margin-top:10px;font-size:11px;color:var(--mu);margin-bottom:5px">Lịch sử 12 điểm</div>
+            ${spark(temps,trip.lo,trip.hi)}
+          </div>
+          <button class="btn btn-s btn-sm btn-fw mt8" onclick="setNav('map')">${ic('map','var(--mu)')} Xem trên bản đồ</button>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('bolt','var(--am)')} Backhaul — Hàng chiều về</div>
+          ${[{from:'Cần Thơ',to:'TP.HCM',g:'Trái cây tươi',w:'2.1T',p:1950000,ok:true,eta:'2h20p'},{from:'Cần Thơ',to:'Bình Dương',g:'Cá tra fillet đông',w:'3.5T',p:2600000,ok:true,eta:'3h'},{from:'Cần Thơ',to:'Đồng Nai',g:'Rau muống sạch',w:'1.2T',p:1100000,ok:false,eta:'3h30p'}].map((l,i)=>`
+            <div id="l${i}" style="border:1.5px solid var(--bd);border-radius:9px;padding:11px 13px;margin-bottom:8px;transition:all .15s">
+              <div class="hs mb6"><span style="font-size:12px;font-weight:600">${l.from} → ${l.to}</span><div class="sp"></div><span style="font-size:13px;font-weight:700;color:var(--g)">${fmt(l.p)}</span></div>
+              <div style="font-size:11px;color:var(--mu);margin-bottom:8px">${l.g} · ${l.w} · ETA ${l.eta} ${l.ok?`<span style="color:var(--g);font-weight:600">✓ Tương thích</span>`:`<span style="color:var(--am);font-weight:600">⚠ Kiểm tra</span>`}</div>
+              <button id="lb${i}" class="btn btn-o btn-sm btn-fw" onclick="acceptLoad(${i})">Nhận đơn</button>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="vs">
+        <div class="card">
+          <div class="ct">${ic('chart','var(--g)')} Earnings Intelligence · Tuần tới</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+            ${[['T2','HCM→CT',2.8,true],['T3','CT→HCM',1.95,false],['T4','HCM→CM',3.4,true],['T5','BD→ĐN',4.2,true],['T6','HCM→CT',2.6,false]].map(([d,r,e,hot])=>`
+              <div style="border-radius:8px;padding:9px 6px;text-align:center;background:${hot?'var(--gl)':'var(--bg)'};border:1px solid ${hot?'#A7F3D0':'var(--bd)'}">
+                <div style="font-size:10px;color:var(--mu)">${d}</div>
+                <div style="font-size:9px;font-weight:600;color:${hot?'var(--gd)':'var(--tx)'};margin:2px 0">${r}</div>
+                <div style="font-size:11px;font-weight:700;color:${hot?'var(--gd)':'var(--mu)'}">${e}M</div>
+                ${hot?`<div style="font-size:9px;color:var(--g)">🔥</div>`:''}
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--tx);color:#fff">
+          <div style="font-size:12px;color:#fff8;margin-bottom:4px">Thu nhập hôm nay</div>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-1px">${fmt(840000)}</div>
+          <div style="margin-top:14px;font-size:12px">
+            <div class="hs mb8" style="border-bottom:1px solid #ffffff18;padding-bottom:8px"><span style="color:#fff8">Chuyến hoàn thành</span><div class="sp"></div><span style="font-weight:600">2 chuyến</span></div>
+            <div class="hs mb8" style="border-bottom:1px solid #ffffff18;padding-bottom:8px"><span style="color:#fff8">Quãng đường</span><div class="sp"></div><span style="font-weight:600">187 km</span></div>
+            <div class="hs"><span style="color:#fff8">Cold Score tháng này</span><div class="sp"></div><span style="color:#A7F3D0;font-weight:600">4.8 ↑</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('warn','var(--am)')} Đơn mới đang chờ</div>
+          ${TRIPS.filter(t=>t.status==='active'&&t.vehicleId==='V001').map(t=>`
+            <div class="tc mb8">
+              <div class="hs mb6"><span class="mono" style="font-size:12px;font-weight:600;color:var(--gd)">${t.id}</span>${bd('Đang chạy','g')}<div class="sp"></div><span style="font-size:13px;font-weight:700;color:var(--g)">${fmt(t.price)}</span></div>
+              <div style="font-size:12px;color:var(--mu)">${t.from} → ${t.to}</div>
+              <div style="font-size:11px;color:var(--mu)">${t.goods} · ${t.weight}T</div>
+              <div class="prog mt8"><div class="prog-f" style="width:${t.progress}%"></div></div>
+              <div class="hs mt6" style="font-size:11px;color:var(--mu)"><span>${t.progress}%</span><div class="sp"></div><span>Nhiệt: <strong style="color:var(--g)">${t.tempNow}°C</strong></span></div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── SHIPPER DASHBOARD ────────────────────────────────────────────
+function shipperDB(){
+  const cats=[...new Set(Object.values(GOODS).map(g=>g.cat))];
+  return `<div class="page">
+    <div class="ph"><h1 class="pt">Đặt chuyến mới</h1><p class="ps">Tiến Phát Export · Đơn đang vận chuyển: <strong style="color:var(--g)">CM-001247</strong></p></div>
+    <div class="g2">
+      <div class="vs">
+        <div class="card">
+          <div class="ct">${ic('truck','var(--g)')} Thông tin chuyến</div>
+          <div class="g2 mb8" style="gap:8px">
+            <div><label class="lbl">Điểm xuất phát</label><select class="sel" id="sfrom" onchange="calcPrice()"><option>TP.HCM</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Cần Thơ</option><option>Bình Dương</option><option>Đà Lạt</option><option>Tiền Giang</option></select></div>
+            <div><label class="lbl">Điểm đến</label><select class="sel" id="sto" onchange="calcPrice()"><option>Cần Thơ</option><option>TP.HCM</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Hải Phòng</option><option>Bình Dương</option></select></div>
+          </div>
+          <div class="mb8">
+            <label class="lbl">Danh mục hàng</label>
+            <select class="sel" id="scat" onchange="filterGoods()">
+              <option value="">-- Chọn danh mục --</option>
+              ${cats.map(c=>`<option>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div class="mb8">
+            <label class="lbl">Loại hàng cụ thể</label>
+            <select class="sel" id="sgood1" onchange="checkCompat()"><option value="">-- Chọn loại hàng --</option>${Object.keys(GOODS).map(g=>`<option value="${g}">${g} (${GOODS[g].temp[0]}°→${GOODS[g].temp[1]}°C)</option>`).join('')}</select>
+          </div>
+          <div class="mb8">
+            <label class="lbl">Hàng ghép (nếu có)</label>
+            <select class="sel" id="sgood2" onchange="checkCompat()"><option value="">-- Kiểm tra ghép --</option>${Object.keys(GOODS).map(g=>`<option value="${g}">${g}</option>`).join('')}</select>
+          </div>
+          <div id="compat-res"></div>
+          <div class="g2 mb8 mt8" style="gap:8px">
+            <div><label class="lbl">Khối lượng (tấn)</label><input type="number" class="inp" id="swt" value="2" min="0.1" max="30" step="0.1" oninput="calcPrice()"/></div>
+            <div><label class="lbl">Ngày lấy hàng</label><input type="date" class="inp" id="sdate" value="${new Date().toISOString().split('T')[0]}"/></div>
+          </div>
+          <div class="g2 mb8" style="gap:8px">
+            <div id="type-shared" onclick="selType('shared')" style="border:1.5px solid var(--g);background:var(--gl);border-radius:9px;padding:10px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:700;color:var(--gd)">Ghép đơn</div><div style="font-size:11px;color:var(--mu)">Tiết kiệm ~35%</div></div>
+            <div id="type-dedicated" onclick="selType('dedicated')" style="border:1.5px solid var(--bd);border-radius:9px;padding:10px;cursor:pointer;text-align:center"><div style="font-size:12px;font-weight:700">Bao xe</div><div style="font-size:11px;color:var(--mu)">Linh hoạt</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('check','var(--g)')} Compatibility Matrix — Ghép hàng</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:10px">Hệ thống tự ngăn chặn ghép hàng không tương thích nhiệt độ</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;font-size:11px">
+            ${[['Tôm đông','Cá tra đông','✓'],['Sầu riêng','Sầu riêng','✓'],['Tôm đông','Cua sống','❌'],['Thịt heo','Xoài tươi','❌'],['Rau sạch','Rau sạch','✓'],['Cá hồi','Thịt bò đông','❌']].map(([a,b,r])=>`
+              <div style="border-radius:6px;padding:6px;background:${r==='✓'?'var(--gl)':'#FEF2F2'};border:1px solid ${r==='✓'?'#A7F3D0':'#FCA5A5'};text-align:center">
+                <div style="font-size:10px;color:var(--mu)">${a}</div>
+                <div style="font-weight:700;color:${r==='✓'?'var(--gd)':'#B91C1C'};font-size:13px;margin:1px 0">${r}</div>
+                <div style="font-size:10px;color:var(--mu)">${b}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="vs">
+        <div class="card" style="background:var(--tx);color:#fff">
+          <div style="font-size:12px;color:#fff8;margin-bottom:4px">Ước tính giá cước · AI Pricing</div>
+          <div id="pd" style="font-size:32px;font-weight:700;letter-spacing:-1px">${fmt(1640000)}</div>
+          <div id="pt" style="font-size:12px;color:#fff6;margin-bottom:16px">Ghép đơn — tiết kiệm ~35%</div>
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:12px">
+            ${[['Tuyến','TP.HCM → Cần Thơ'],['Khối lượng','2 tấn'],['Loại xe','5 tấn đông lạnh'],['Thanh toán','24h sau giao ✓'],['Cold Passport','Tự động tạo ✓']].map(([l,v])=>`<div class="hs"><span style="color:#fff8">${l}</span><div class="sp"></div><span style="font-weight:600">${v}</span></div>`).join('')}
+          </div>
+          <div id="eta-preview" style="margin-top:14px;padding:10px;background:#ffffff12;border-radius:8px;font-size:12px">
+            ${ic('clock','#A7F3D0',13)} ETA dự kiến: <strong style="color:#A7F3D0">~3h 15p</strong> · 3 tài xế sẵn sàng gần bạn
+          </div>
+          <button class="btn btn-p btn-fw" style="margin-top:14px;padding:11px;font-size:14px" onclick="bookTrip()">Đặt chuyến ngay →</button>
+        </div>
+
+        <div class="card" style="border:1.5px solid var(--g);background:var(--gl)">
+          <div class="ct" style="color:var(--gd)">${ic('truck','var(--g)')} Đơn đang vận chuyển</div>
+          <div class="hs mb6"><span class="mono" style="font-size:13px;font-weight:600;color:var(--gd)">CM-001247</span>${bd('● Đang chạy','g')}</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:3px">TP.HCM → Cần Thơ · Tôm sú đông lạnh</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:4px">Tài xế: Nguyễn Văn Hùng · ${stars(4.8)}</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:10px">${ic('clock','var(--mu)',12)} Còn khoảng 2h 15p tới nơi</div>
+          <div class="prog mb6"><div class="prog-f" style="width:62%"></div></div>
+          <div class="hs mb10" style="font-size:11px;color:var(--mu)">
+            <span>62%</span><div class="sp"></div>
+            <span>Nhiệt: <strong id="mytemp" style="color:var(--gd)">-20.1°C</strong> ✓</span>
+          </div>
+          <div class="g2" style="gap:6px">
+            <button class="btn btn-o btn-sm btn-fw" onclick="setNav('map')">${ic('map','var(--g)')} Bản đồ</button>
+            <button class="btn btn-s btn-sm btn-fw" onclick="callDriver()">${ic('phone','var(--mu)')} Gọi tài xế</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('warn','var(--am)')} Risk Assessment hôm nay</div>
+          ${[['Nhiệt độ môi trường','34°C','a'],['Tình trạng tuyến','Bình thường','g'],['Tài xế ≥4.5★ sẵn sàng','8 tài xế','g'],['ETA dự kiến','~3h 15p','g'],['Rủi ro hỏng hàng','Thấp (2.1%)','g']].map(([l,v,t])=>`
+            <div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;color:var(--mu)">${l}</span><div class="sp"></div>${bd(v,t)}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── ADMIN DASHBOARD ──────────────────────────────────────────────
+function adminDB(){
+  const today=new Date().toLocaleDateString('vi-VN');
+  return `<div class="page">
+    <div class="ph"><div class="hs">
+      <div><h1 class="pt">Tổng quan hệ thống</h1><p class="ps">Ops Manager · ${today} · Cập nhật real-time</p></div>
+      <div class="sp"></div>
+      ${bd('● 5 xe hoạt động','g')} ${bd('⚠ 1 cảnh báo','r')}
+    </div></div>
+
+    <div class="g6 mb12">
+      ${[['truck','5','Xe đang chạy','var(--g)'],['pack','18','Đơn hôm nay','#3B82F6'],['users','5','KH đang giao','var(--pu)'],['warn','1','Cảnh báo nhiệt','var(--re)'],['coin',fmt(32500000),'Doanh thu hôm nay','var(--gd)'],['check','97.3%','Nhiệt OK','var(--g)']].map(([i,v,l,c])=>`
+        <div class="sc"><div class="si" style="background:${c}18">${ic(i,c,16)}</div><div class="sv" style="color:${c};font-size:18px">${v}</div><div class="sl">${l}</div></div>`).join('')}
+    </div>
+
+    <div class="g2">
+      <div class="vs">
+        <div class="card">
+          <div class="ct">${ic('truck','var(--g)')} Fleet Overview — Toàn bộ xe</div>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Tài xế</th><th>Hàng</th><th>Nhiệt độ</th><th>Trạng thái</th><th>ETA</th></tr></thead>
+              <tbody>
+                ${VEHICLES.map(v=>{
+                  const eta=calcETA([v.lat,v.lng],[10.0452,105.7469]);
+                  return `<tr onclick="setNav('map')">
+                    <td class="mono" style="font-weight:600">${v.id}</td>
+                    <td style="font-size:12px">${v.driver.split(' ').pop()}</td>
+                    <td style="font-size:12px;color:var(--mu)">${v.goods.substring(0,18)}</td>
+                    <td id="atemp-${v.id}" style="font-weight:700;color:${v.status==='alert'?'var(--re)':'var(--g)'}">${v.temp}°C</td>
+                    <td>${bd(v.status==='alert'?'⚠ Alert':'● OK',v.status==='alert'?'r':'g')}</td>
+                    <td style="font-size:11px;color:var(--mu)">${eta.str}</td>
+                  </tr>`;}).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('warn','var(--re)')} Log cảnh báo</div>
+          ${[{t:'14:23',v:'V003',msg:'Thịt heo vượt 4°C (đang 5.9°C)',l:'r'},{t:'11:45',v:'V001',msg:'Mở cửa xe >5 phút tại Bến xe Miền Tây',l:'a'},{t:'09:12',v:'V002',msg:'GPS gián đoạn 2 phút',l:'a'},{t:'08:00',v:'V005',msg:'Pin IoT còn 15%',l:'a'}].map(a=>`
+            <div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd)">
+              <span class="mono" style="font-size:10px;color:var(--mu);width:36px;flex-shrink:0">${a.t}</span>
+              <span class="mono" style="font-size:10px;font-weight:600;color:var(--gd);width:32px;flex-shrink:0">${a.v}</span>
+              <span style="font-size:12px;flex:1">${a.msg}</span>
+              ${bd(a.l==='r'?'!':'→',a.l)}
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="vs">
+        <div class="card">
+          <div class="ct">${ic('users','var(--pu)')} Khách hàng mới nhất</div>
+          ${CUSTOMERS.slice(0,4).map(c=>`
+            <div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd)">
+              <div class="sba" style="background:var(--pu);width:28px;height:28px;font-size:11px;flex-shrink:0">${c.name.charAt(0)}</div>
+              <div style="flex:1"><div style="font-size:12px;font-weight:600">${c.name}</div><div style="font-size:11px;color:var(--mu)">${c.trips} chuyến · ${fmt(c.spent)}</div></div>
+              ${bd(c.tier,c.tier==='Bạch Kim'?'pu':c.tier==='Vàng'?'a':c.tier==='Bạc'?'b':'gray')}
+            </div>`).join('')}
+          <button class="btn btn-s btn-sm btn-fw mt8" onclick="setNav('customers')">${ic('users','var(--mu)')} Xem tất cả KH</button>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('pack','var(--g)')} Đơn hàng mới nhất</div>
+          ${TRIPS.slice(0,4).map(t=>`
+            <div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd)">
+              <span class="mono" style="font-size:11px;font-weight:600;color:var(--gd);flex-shrink:0">${t.id}</span>
+              <span style="font-size:12px;color:var(--mu);flex:1;margin:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.goods}</span>
+              ${bd(t.status==='active'?'● Live':t.status==='completed'?'✓ Xong':'⏳',t.status==='active'?'g':t.status==='completed'?'b':'a')}
+              <span style="font-size:11px;font-weight:600;color:var(--g);margin-left:6px;flex-shrink:0">${fmt(t.price)}</span>
+            </div>`).join('')}
+          <button class="btn btn-s btn-sm btn-fw mt8" onclick="setNav('orders')">${ic('pack','var(--mu)')} Xem tất cả đơn</button>
+        </div>
+
+        <div class="card">
+          <div class="ct">${ic('chart','var(--g)')} Hiệu suất hôm nay</div>
+          ${[['Tỉ lệ đúng giờ','94.2%','g'],['Nhiệt độ OK','97.3%','g'],['Tài xế active','5/6','g'],['Đơn hàng hoàn thành','12','g'],['Đơn bị hủy','0','g'],['Doanh thu','32.5M VND','g']].map(([l,v,t])=>`
+            <div class="hs" style="padding:6px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;color:var(--mu)">${l}</span><div class="sp"></div>${bd(v,t)}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MAP PAGE ──────────────────────────────────────────────────────
+function mapPage(){
+  const isA=S.role==='admin', isSh=S.role==='shipper', isDr=S.role==='driver';
+  let vv=VEHICLES;
+  if(isSh) vv=VEHICLES.filter(v=>v.tripId===S.myTripId);
+  else if(isDr) vv=VEHICLES.filter(v=>v.id==='V001');
+  const title=isA?'Fleet Map — Toàn bộ 5 xe':isSh?'Theo dõi hàng của bạn':'Bản đồ chuyến của tôi';
+  return `<div class="page" style="padding:16px 20px">
+    <div class="ph"><div class="hs">
+      <div><h1 class="pt">${title}</h1>
+        <p class="ps">${isA?'GPS + Nhiệt độ real-time · 5 xe đang hoạt động':isSh?`Đơn ${S.myTripId} · Chỉ bạn thấy xe này`:'Chuyến CM-001247 · Live GPS'}</p>
+      </div><div class="sp"></div>
+      ${isA?`${bd('● '+vv.length+' xe','g')} ${bd('⚠ 1 alert','r')}`:isSh?bd('● Đang giao','g'):bd('● Live','g')}
+    </div></div>
+
+    ${isSh?`<div style="background:var(--gl);border:1px solid #A7F3D0;border-radius:9px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px">${ic('eye','var(--g)')} <strong style="color:var(--gd)">Giới hạn quyền xem:</strong> <span style="color:var(--gd)">Chỉ hiển thị xe vận chuyển đơn CM-001247 của bạn.</span></div>`:''}
+    ${isA?`<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:9px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px">${ic('admin','#3B82F6')} <strong style="color:#1E40AF">Admin View:</strong> <span style="color:#1E40AF">Đang xem toàn bộ ${vv.length} xe trong hệ thống.</span></div>`:''}
+
+    <div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--bd);box-shadow:var(--sh)">
+      <div id="map-container" style="height:clamp(300px,48vh,540px);width:100%"></div>
+      <div class="map-overlay" style="position:absolute;top:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:7px">
+        <div style="background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-radius:10px;padding:11px 13px;border:1px solid var(--bd);min-width:185px;box-shadow:var(--sh)">
+          <div style="font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.7px;margin-bottom:9px">${isA?'Tất cả xe':'Xe của bạn'}</div>
+          ${vv.map(v=>`<div onclick="focusVehicle('${v.id}')" style="padding:6px 8px;border-radius:7px;cursor:pointer;margin-bottom:3px" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+            <div class="hs"><div style="width:7px;height:7px;border-radius:50%;background:${v.status==='alert'?'#EF4444':'#0CB87A'};flex-shrink:0" class="${v.status==='alert'?'pulse':''}"></div>
+              <span style="font-size:12px;font-weight:600">${v.id}</span><div class="sp"></div>
+              <span id="mtemp-${v.id}" style="font-size:12px;font-weight:700;color:${v.status==='alert'?'#EF4444':'#0CB87A'}">${v.temp}°C</span>
+            </div>
+            <div style="font-size:10px;color:var(--mu);margin-top:1px;padding-left:15px">${v.driver.split(' ').pop()} · ${v.goods.substring(0,14)}</div>
+          </div>`).join('')}
+        </div>
+        <div style="background:rgba(255,255,255,.97);border-radius:10px;padding:10px 12px;border:1px solid var(--bd);box-shadow:var(--sh)">
+          ${[['#0CB87A','Nhiệt OK'],['#EF4444','⚠ Vượt ngưỡng']].map(([c,l])=>`<div class="hs mb6"><div style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></div><span style="font-size:11px;color:var(--mu)">${l}</span></div>`).join('')}
+          <div style="font-size:10px;color:var(--mu);margin-top:4px">${ic('refresh','var(--mu)',11)} Mỗi 3 giây</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile strip -->
+    <div class="mob-vehicle-strip">
+      ${vv.map(v=>`<div onclick="focusVehicle('${v.id}')" style="flex-shrink:0;min-width:130px;background:#fff;border:1.5px solid ${v.status==='alert'?'#FCA5A5':'var(--bd)'};border-radius:9px;padding:9px 11px;cursor:pointer">
+        <div class="hs mb3"><div style="width:6px;height:6px;border-radius:50%;background:${v.status==='alert'?'#EF4444':'#0CB87A'}" class="${v.status==='alert'?'pulse':''}"></div><span style="font-size:12px;font-weight:600">${v.id}</span><div class="sp"></div><span id="mtemp-${v.id}" style="font-size:12px;font-weight:700;color:${v.status==='alert'?'#EF4444':'#0CB87A'}">${v.temp}°C</span></div>
+        <div style="font-size:10px;color:var(--mu)">${v.goods.substring(0,16)}</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="${isA?'g4':'g2'} mt12">
+      ${vv.map(v=>`<div class="card" style="padding:12px 14px">
+        <div class="hs mb6"><div style="width:7px;height:7px;border-radius:50%;background:${v.status==='alert'?'#EF4444':'#0CB87A'}"></div><span style="font-size:12px;font-weight:600">${v.id}</span><div class="sp"></div><span id="btemp-${v.id}" style="font-size:15px;font-weight:700;color:${v.status==='alert'?'#EF4444':'#0CB87A'}">${v.temp}°C</span></div>
+        <div style="font-size:11px;color:var(--mu);margin-bottom:7px">${v.driver} · ${v.goods}</div>
+        ${spark(genTempHist(v.temp,v.lo,v.hi),v.lo,v.hi,isA?150:260,40)}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── ORDERS PAGE ──────────────────────────────────────────────────
+function ordersPage(){
+  const isA=S.role==='admin';
+  const trips=isA?TRIPS:S.role==='driver'?TRIPS.filter(t=>t.vehicleId==='V001'):TRIPS.filter(t=>t.id===S.myTripId);
+  return `<div class="page">
+    <div class="ph"><h1 class="pt">${isA?'Tất cả đơn hàng':'Đơn hàng của tôi'}</h1>
+    <p class="ps">${isA?trips.length+' đơn · Hôm nay':'Chi tiết trạng thái vận chuyển'}</p></div>
+    <div class="vs">
+      ${trips.map(t=>`<div class="card">
+        <div class="hs mb10">
+          <span class="mono" style="font-weight:700;font-size:14px;color:var(--gd)">${t.id}</span>
+          ${bd(t.status==='active'?'● Đang chạy':t.status==='completed'?'✓ Xong':'⏳ Chờ',t.status==='active'?'g':t.status==='completed'?'b':'a')}
+          <div class="sp"></div>
+          <span style="font-weight:700;font-size:14px;color:var(--g)">${fmt(t.price)}</span>
+        </div>
+        <div class="g2 mb10" style="gap:8px">
+          <div><div class="lbl">Tuyến</div><div style="font-size:13px;font-weight:500">${t.from} → ${t.to}</div></div>
+          <div><div class="lbl">Hàng hóa</div><div style="font-size:13px;font-weight:500">${t.goods} · ${t.weight}T</div></div>
+          <div><div class="lbl">Nhiệt yêu cầu</div><div style="font-size:13px;font-weight:500;color:var(--g)">${t.temp}</div></div>
+          <div><div class="lbl">Tài xế</div><div style="font-size:13px;font-weight:500">${t.driver||'Đang tìm...'} ${t.score?`· ${t.score}★`:''}</div></div>
+          ${isA?`<div><div class="lbl">Khách hàng</div><div style="font-size:13px;font-weight:500">${t.shipperName||'—'}</div></div>`:''}
+          ${isA?`<div><div class="lbl">ETA đến nơi</div><div style="font-size:13px;font-weight:500">${calcETA([10.7769,106.7009],[10.0452,105.7469]).str}</div></div>`:''}
+        </div>
+        ${t.status==='active'?`<div><div class="hs" style="font-size:12px;color:var(--mu);margin-bottom:5px"><span>Tiến độ: ${t.progress}%</span><div class="sp"></div><span>Nhiệt: <strong style="color:var(--g)">${t.tempNow}°C</strong></span></div>
+          <div class="prog"><div class="prog-f" style="width:${t.progress}%"></div></div>
+          <div class="hs mt10" style="gap:7px">
+            <button class="btn btn-s btn-sm" onclick="setNav('map')">${ic('map','var(--mu)')} Bản đồ</button>
+            <button class="btn btn-s btn-sm" onclick="setNav('passport')">${ic('shield','var(--mu)')} Cold Passport</button>
+            ${isA?`<button class="btn btn-r btn-sm" onclick="notify('Đã gửi cảnh báo tới tài xế!','g')">${ic('warn','#fff')} Alert</button>`:''}
+          </div></div>`:``}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── CUSTOMERS PAGE ───────────────────────────────────────────────
+function customersPage(){
+  return `<div class="page">
+    <div class="ph"><div class="hs">
+      <div><h1 class="pt">Khách hàng</h1><p class="ps">${CUSTOMERS.length} khách hàng · ${CUSTOMERS.filter(c=>c.status==='active').length} đang hoạt động</p></div>
+      <div class="sp"></div>
+      <button class="btn btn-p btn-sm">${ic('plus','#fff')} Thêm KH</button>
+    </div></div>
+
+    <div class="g3 mb12">
+      ${[['users',CUSTOMERS.length,'Tổng KH','var(--pu)'],['check',CUSTOMERS.filter(c=>c.status==='active').length,'Đang active','var(--g)'],['coin',fmt(CUSTOMERS.reduce((a,c)=>a+c.spent,0)),'Tổng doanh thu','var(--gd)']].map(([i,v,l,c])=>`
+        <div class="sc"><div class="si" style="background:${c}18">${ic(i,c,16)}</div><div class="sv" style="color:${c};font-size:18px">${v}</div><div class="sl">${l}</div></div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="ct">${ic('users','var(--pu)')} Danh sách khách hàng</div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>ID</th><th>Tên khách hàng</th><th>Điện thoại</th><th>Số chuyến</th><th>Tổng chi</th><th>Hạng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+          <tbody>
+            ${CUSTOMERS.map(c=>`<tr>
+              <td class="mono" style="font-size:11px;color:var(--mu)">${c.id}</td>
+              <td style="font-weight:600">${c.name}</td>
+              <td style="font-size:12px">${c.phone}</td>
+              <td style="font-weight:600;text-align:center">${c.trips}</td>
+              <td style="font-weight:600;color:var(--g)">${fmt(c.spent)}</td>
+              <td>${bd(c.tier,c.tier==='Bạch Kim'?'pu':c.tier==='Vàng'?'a':c.tier==='Bạc'?'b':'gray')}</td>
+              <td>${bd(c.status==='active'?'● Active':'Inactive',c.status==='active'?'g':'gray')}</td>
+              <td><button class="btn btn-s btn-sm" onclick="notify('Chi tiết KH: '+\`${c.name}\`,'g')">${ic('eye','var(--mu)',13)}</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── DRIVERS PAGE ─────────────────────────────────────────────────
+function driversPage(){
+  return `<div class="page">
+    <div class="ph"><div class="hs">
+      <div><h1 class="pt">Tài xế</h1><p class="ps">${DRIVERS.length} tài xế · ${DRIVERS.filter(d=>d.status==='driving').length} đang chạy</p></div>
+      <div class="sp"></div>
+      <button class="btn btn-p btn-sm">${ic('plus','#fff')} Thêm tài xế</button>
+    </div></div>
+
+    <div class="g4 mb12">
+      ${[['truck',DRIVERS.filter(d=>d.status==='driving').length,'Đang chạy','var(--g)'],['check',DRIVERS.filter(d=>d.status==='available').length,'Sẵn sàng','#3B82F6'],['warn',DRIVERS.filter(d=>d.status==='alert').length,'Cảnh báo','var(--re)'],['star',(DRIVERS.reduce((a,d)=>a+d.score,0)/DRIVERS.length).toFixed(1),'Điểm TB','var(--am)']].map(([i,v,l,c])=>`
+        <div class="sc"><div class="si" style="background:${c}18">${ic(i,c,16)}</div><div class="sv" style="color:${c};font-size:18px">${v}</div><div class="sl">${l}</div></div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="ct">${ic('truck','var(--g)')} Danh sách tài xế</div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>ID</th><th>Tài xế</th><th>Điện thoại</th><th>Biển số</th><th>Cold Score</th><th>Chuyến</th><th>Hạng</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            ${DRIVERS.map(d=>`<tr>
+              <td class="mono" style="font-size:11px;color:var(--mu)">${d.id}</td>
+              <td style="font-weight:600">${d.name}</td>
+              <td style="font-size:12px">${d.phone}</td>
+              <td class="mono" style="font-size:12px">${d.plate}</td>
+              <td><div class="hs">${stars(d.score)}</div></td>
+              <td style="font-weight:600;text-align:center">${d.trips}</td>
+              <td>${bd(d.tier,d.tier==='Bạch Kim'?'pu':d.tier==='Vàng'?'a':d.tier==='Bạc'?'b':'gray')}</td>
+              <td>${bd(d.status==='driving'?'● Đang chạy':d.status==='available'?'Sẵn sàng':'⚠ Alert',d.status==='driving'?'g':d.status==='available'?'b':'r')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── PASSPORT PAGE ────────────────────────────────────────────────
+function passportPage(){
+  return `<div class="page">
+    <div class="ph"><h1 class="pt">${ic('shield','var(--g)',17)} Cold Passport · Blockchain</h1>
+    <p class="ps">Hộ chiếu chuyển bất biến · Xác thực nhiệt độ · Bằng chứng pháp lý</p></div>
+    <div class="g2">
+      <div>
+        <div class="vs" id="plist">
+          ${PASSPORTS.map(p=>`<div class="tc" id="pc-${p.id}" onclick="selPassport('${p.id}')">
+            <div class="hs mb6">
+              <span class="mono" style="font-weight:700;font-size:12px;color:var(--gd)">${p.id}</span>
+              ${bd(p.status==='verified'?'✓ Xác thực':'⚠ Vi phạm',p.status==='verified'?'g':'r')}
+              <div class="sp"></div>
+              <span class="mono" style="font-size:9px;color:var(--g);background:var(--gl);padding:2px 6px;border-radius:4px">${p.hash.substring(0,12)}…</span>
+            </div>
+            <div style="font-size:12px;color:var(--mu)">${p.goods}</div>
+            <div style="font-size:11px;color:var(--mu)">${p.route} · ${p.date}</div>
+            <div class="g3 mt8">
+              ${[['Min',p.minT+'°C'],['Avg',p.avgT+'°C'],['Max',p.maxT+'°C']].map(([l,v])=>`<div style="background:var(--bg);border-radius:7px;padding:6px;text-align:center"><div style="font-size:10px;color:var(--mu)">${l}</div><div style="font-weight:600;font-size:12px;color:var(--g)">${v}</div></div>`).join('')}
+            </div>
+            ${p.violations>0?`<div style="margin-top:7px;background:#FEF2F2;border-radius:7px;padding:6px 9px;font-size:11px;color:#B91C1C">⚠ ${p.violations} vi phạm nhiệt độ</div>`:''}
+          </div>`).join('')}
+        </div>
+        <div class="card mt12">
+          <div class="ct">${ic('qr','var(--g)')} Xác minh hash</div>
+          <div class="hs" style="gap:7px">
+            <input type="text" class="inp" id="mhash" placeholder="0x..." style="font-family:'DM Mono',monospace;font-size:12px"/>
+            <button class="btn btn-p btn-sm" onclick="verifyHash()">Xác minh</button>
+          </div>
+        </div>
+      </div>
+      <div id="pdetail">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:250px;color:var(--mu);text-align:center;gap:8px">
+          <div style="opacity:.2">${ic('shield','var(--mu)',48)}</div>
+          <div style="font-size:13px">Chọn Cold Passport để xem chi tiết</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function selPassport(id){
+  const p=PASSPORTS.find(x=>x.id===id); if(!p) return;
+  $$('.tc[id^="pc-"]').forEach(c=>c.classList.remove('sel'));
+  el(`pc-${id}`)?.classList.add('sel');
+  el('pdetail').innerHTML=`<div class="card"><div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div></div>`;
+  setTimeout(()=>{
+    const pl=p.id+p.goods+p.route+p.avgT;
+    let h1=5381,h2=0x811c9dc5;
+    for(let i=0;i<pl.length;i++){h1=(h1*33)^pl.charCodeAt(i);h2=(h2^pl.charCodeAt(i))*0x01000193;}
+    const hash='0x'+Math.abs(h1).toString(16).padStart(8,'0')+Math.abs(h2).toString(16).padStart(8,'0');
+    el('pdetail').innerHTML=`<div class="card fade">
+      <div class="ct">${ic('shield','var(--g)')} ${p.id}</div>
+      <div style="margin-bottom:12px">
+        <div class="blk" style="background:#f0fdf4;border-color:#86efac"><div style="font-size:9px;color:var(--mu);margin-bottom:3px">GENESIS</div><div class="mono" style="color:#166534;font-size:10px">LogiFresh_vn_mainnet</div></div>
+        <div class="blk-conn ok"></div>
+        <div class="blk ${p.status==='verified'?'ok':'bad'}">
+          <div style="font-size:9px;color:var(--mu);margin-bottom:4px">BLOCK #${Math.floor(Math.random()*9999)+10000}</div>
+          <div class="hs mb3"><span style="font-size:9px;color:var(--mu);width:40px">Hash:</span><span class="mono" style="font-size:9px;color:var(--gd);word-break:break-all">${hash}</span></div>
+          <div class="hs"><span style="font-size:9px;color:var(--mu);width:40px">Nonce:</span><span class="mono" style="font-size:9px">${Math.floor(Math.random()*99999)}</span></div>
+        </div>
+      </div>
+      <div style="background:${p.status==='verified'?'var(--gl)':'#FEF2F2'};border:1px solid ${p.status==='verified'?'#A7F3D0':'#FCA5A5'};border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px">
+        <div style="font-weight:700;color:${p.status==='verified'?'var(--gd)':'#B91C1C'};margin-bottom:2px">${p.status==='verified'?'✓ Xác thực — dữ liệu toàn vẹn':'⚠ Phát hiện vi phạm nhiệt độ'}</div>
+        <div style="color:${p.status==='verified'?'var(--g)':'#DC2626'}">${p.status==='verified'?'12 nodes xác minh, hash hợp lệ.':`${p.violations} sự kiện vượt ngưỡng ghi bất biến.`}</div>
+      </div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:7px">${ic('thermo','var(--g)')} Biểu đồ nhiệt độ toàn hành trình</div>
+      <div style="background:var(--bg);border-radius:9px;padding:11px;margin-bottom:11px">${spark(p.temps,p.lo,p.hi,360,56)}</div>
+      <div class="g2 mb10" style="gap:7px">
+        ${[['Tuyến',p.route],['Ngày',p.date],['Tài xế',p.driver],['Hàng',p.goods]].map(([l,v])=>`<div style="background:var(--bg);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--mu)">${l}</div><div style="font-size:12px;font-weight:600;margin-top:1px">${v}</div></div>`).join('')}
+      </div>
+      <button class="btn btn-d btn-fw" onclick="notify('📄 Đang xuất PDF...','g');setTimeout(()=>notify('✓ ${p.id}.pdf tải thành công!','g'),1500)">${ic('qr','#fff')} Xuất PDF Cold Passport</button>
+    </div>`;
+  },1200);
+}
+function verifyHash(){
+  const v=el('mhash')?.value.trim(); if(!v){notify('Nhập hash!','r');return;}
+  notify(`${ic('refresh','#fff',13)} Đang xác minh...`);
+  setTimeout(()=>notify(v.startsWith('0x')&&v.length>10?'✓ Hash hợp lệ — block tồn tại':'✗ Không tìm thấy hash',v.startsWith('0x')&&v.length>10?'g':'r'),1500);
+}
+
+// ── OPS CENTER ───────────────────────────────────────────────────
+function opsCenter(){
+  return `<div class="page">
+    <div class="ph"><div class="hs">
+      <div><h1 class="pt">Ops Center — Trung tâm điều phối</h1><p class="ps">Fleet + IoT + Cảnh báo real-time</p></div>
+      <div class="sp"></div>${bd('● 5 xe active','g')} ${bd('⚠ 1 alert','r')}
+    </div></div>
+
+    <div class="g6 mb12">
+      ${[['truck','5','Xe chạy','var(--g)'],['pack','18','Đơn hôm nay','#3B82F6'],['warn','1','Cảnh báo','var(--re)'],['coin',fmt(32500000),'Doanh thu','var(--gd)'],['check','97.3%','Nhiệt OK','var(--g)'],['clock','94.2%','Đúng giờ','var(--am)']].map(([i,v,l,c])=>`
+      <div class="sc"><div class="si" style="background:${c}18">${ic(i,c,15)}</div><div class="sv" style="color:${c};font-size:17px">${v}</div><div class="sl">${l}</div></div>`).join('')}
+    </div>
+
+    <div class="g2">
+      <div style="border-radius:12px;overflow:hidden;border:1px solid var(--bd);position:relative">
+        <div id="map-container" style="height:420px"></div>
+      </div>
+      <div class="vs">
+        <div class="card" style="padding:12px 16px">
+          <div class="ct" style="margin-bottom:10px">Fleet live</div>
+          <table class="tbl" style="font-size:12px">
+            <thead><tr><th>ID</th><th>Tài xế</th><th>°C</th><th>ETA</th><th>OK</th></tr></thead>
+            <tbody>${VEHICLES.map(v=>`<tr onclick="focusVehicle('${v.id}')">
+              <td class="mono" style="font-weight:600">${v.id}</td>
+              <td>${v.driver.split(' ').pop()}</td>
+              <td id="atemp-${v.id}" style="font-weight:700;color:${v.status==='alert'?'var(--re)':'var(--g)'}">${v.temp}°C</td>
+              <td style="color:var(--mu)">${calcETA([v.lat,v.lng],[10.0452,105.7469]).str}</td>
+              <td>${bd(v.status==='alert'?'⚠':'✓',v.status==='alert'?'r':'g')}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div class="card" style="padding:12px 16px">
+          <div class="ct" style="margin-bottom:10px">${ic('warn','var(--re)')} Alerts</div>
+          ${[{t:'14:23',v:'V003',msg:'Thịt heo vượt 4°C',l:'r'},{t:'11:45',v:'V001',msg:'Mở cửa >5p',l:'a'},{t:'09:12',v:'V002',msg:'GPS mất 2p',l:'a'},{t:'08:00',v:'V005',msg:'Pin IoT 15%',l:'a'}].map(a=>`
+          <div class="hs" style="padding:6px 0;border-bottom:1px solid var(--bd)">
+            <span class="mono" style="font-size:10px;color:var(--mu);width:34px;flex-shrink:0">${a.t}</span>
+            <span class="mono" style="font-size:10px;font-weight:600;color:var(--gd);width:30px;flex-shrink:0">${a.v}</span>
+            <span style="font-size:11px;flex:1">${a.msg}</span>
+            ${bd(a.l==='r'?'!':'→',a.l)}
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MAP INIT — OpenStreetMap (Leaflet) ────────────────────────────
+function initMap(){
+  const container=el('map-container'); if(!container) return;
+  if(S.map){S.map.remove();S.map=null;}
+
+  const isA=S.role==='admin', isSh=S.role==='shipper', isDr=S.role==='driver';
+  let vv=VEHICLES;
+  if(isSh) vv=VEHICLES.filter(v=>v.tripId===S.myTripId);
+  else if(isDr) vv=VEHICLES.filter(v=>v.id==='V001');
+
+  const map=L.map(container,{center:[10.7869,106.6700],zoom:12,zoomControl:true,attributionControl:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19
+  }).addTo(map);
+  S.map=map; S.mapMarkers={};
+
+  // Draw route for shipper/driver
+  if(!isA && vv.length>0){
+    const trip=TRIPS.find(t=>t.id===S.myTripId)||TRIPS[0];
+    const coords=[[10.7400,106.6600],[10.7600,106.6820],[10.7769,106.7009],[10.7500,106.5800],[10.5000,105.9500],[10.0452,105.7469]];
+    L.polyline(coords,{color:'#0CB87A',weight:4,dashArray:'10 6',opacity:.85}).addTo(map);
+    // Origin marker
+    L.circleMarker([10.7400,106.6600],{radius:7,fillColor:'#0CB87A',fillOpacity:1,color:'#fff',weight:2.5}).bindPopup(`<b>Điểm lấy hàng</b><br>TP.HCM (Quận 8)`).addTo(map);
+    // Destination marker
+    L.circleMarker([10.0452,105.7469],{radius:7,fillColor:'#3B82F6',fillOpacity:1,color:'#fff',weight:2.5}).bindPopup(`<b>Điểm giao hàng</b><br>Cần Thơ (Ninh Kiều)`).addTo(map);
+  }
+
+  // Vehicle markers
+  vv.forEach(v=>{
+    const c=v.status==='alert'?'#EF4444':'#0CB87A';
+    const svgStr=`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18" fill="${c}" stroke="white" stroke-width="3" opacity="${v.status==='alert'?'.95':'1'}"/>
+      <svg x="10" y="10" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round">
+        <rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/>
+        <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+      </svg>
+      ${v.status==='alert'?'<circle cx="32" cy="8" r="6" fill="#EF4444" stroke="white" stroke-width="2"/><text x="32" y="12" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>':''}
+    </svg>`;
+    const icon=L.divIcon({html:svgStr,iconSize:[40,40],iconAnchor:[20,20],popupAnchor:[0,-22],className:''});
+    const eta=calcETA([v.lat,v.lng],[10.0452,105.7469]);
+    const popup=`<div style="font-family:'DM Sans',sans-serif;min-width:190px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px">${v.id} — ${v.driver}</div>
+      <div style="font-size:12px;color:#6B7280;margin-bottom:2px">${v.goods} · ${v.plate}</div>
+      <div style="font-size:11px;color:#6B7280;margin-bottom:8px">${v.route}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:${v.status==='alert'?'#FEF2F2':'#E8FAF4'};border-radius:7px;padding:7px 9px;margin-bottom:6px">
+        <span style="font-size:11px;color:#6B7280">Nhiệt độ</span>
+        <span style="font-weight:700;font-size:17px;color:${c}">${v.temp}°C</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#EFF6FF;border-radius:7px;padding:6px 9px;margin-bottom:6px">
+        <span style="font-size:11px;color:#6B7280">ETA còn</span>
+        <span style="font-weight:700;font-size:13px;color:#1E40AF">${eta.str}</span>
+      </div>
+      <div style="font-size:10px;background:${v.status==='alert'?'#FEF2F2':'#E8FAF4'};padding:5px 7px;border-radius:5px;color:${v.status==='alert'?'#B91C1C':'#065F46'};font-weight:600">
+        ${v.status==='alert'?'⚠ VƯỢT NGƯỠNG — Xử lý ngay!':'✓ Nhiệt độ trong ngưỡng an toàn'}
+      </div>
+    </div>`;
+    const marker=L.marker([v.lat,v.lng],{icon}).addTo(map).bindPopup(popup,{maxWidth:230});
+    S.mapMarkers[v.id]=marker;
+  });
+
+  // Animate vehicle movement every 4s
+  setInterval(()=>{
+    vv.forEach(v=>{
+      v.lat+=(Math.random()-.5)*0.003;
+      v.lng+=(Math.random()-.5)*0.003;
+      if(S.mapMarkers[v.id]) S.mapMarkers[v.id].setLatLng([v.lat,v.lng]);
+    });
+  },4000);
+
+  // Fit bounds
+  if(vv.length>0){
+    const bounds=L.latLngBounds(vv.map(v=>[v.lat,v.lng]));
+    if(vv.length===1) map.setView([vv[0].lat,vv[0].lng],14);
+    else map.fitBounds(bounds,{padding:[50,50]});
+  }
+}
+
+function focusVehicle(id){
+  const v=VEHICLES.find(x=>x.id===id); if(!v) return;
+  if(S.map&&S.mapMarkers[id]){S.map.flyTo([v.lat,v.lng],15,{duration:.9});S.mapMarkers[id].openPopup();}
+}
+
+// ── EVENTS ───────────────────────────────────────────────────────
+function attachEv(){}
+let selType_='shared';
+function selType(t){
+  selType_=t;
+  ['shared','dedicated'].forEach(v=>{
+    const d=el(`type-${v}`); if(!d) return;
+    d.style.borderColor=v===t?'var(--g)':'var(--bd)'; d.style.background=v===t?'var(--gl)':'#fff';
+  });
+  calcPrice();
+}
+function calcPrice(){
+  const w=parseFloat(el('swt')?.value||2);
+  const base=selType_==='shared'?820000:1400000;
+  const p=Math.round(w*base);
+  const pd=el('pd'), pt=el('pt');
+  if(pd) pd.textContent=fmt(p);
+  if(pt) pt.textContent=selType_==='shared'?'Ghép đơn — tiết kiệm ~35%':'Bao xe — linh hoạt';
+}
+function filterGoods(){
+  const cat=el('scat')?.value; const sel=el('sgood1'); if(!sel) return;
+  const opts=Object.entries(GOODS).filter(([k,v])=>!cat||v.cat===cat);
+  sel.innerHTML='<option value="">-- Chọn loại hàng --</option>'+opts.map(([k,v])=>`<option value="${k}">${k} (${v.temp[0]}→${v.temp[1]}°C)</option>`).join('');
+}
+function checkCompat(){
+  const g1=el('sgood1')?.value, g2=el('sgood2')?.value, res=el('compat-res'); if(!res) return;
+  if(!g1||!g2){res.innerHTML='';return;}
+  const ok=tempOk(GOODS[g1]?.temp||[0,0],GOODS[g2]?.temp||[0,0]);
+  res.innerHTML=`<div class="${ok?'compat-ok':'compat-no'}">${ok?`✓ Có thể ghép: ${g1} & ${g2} — nhiệt độ tương thích`:`❌ KHÔNG THỂ GHÉP: ${g1} (${GOODS[g1]?.temp[0]}→${GOODS[g1]?.temp[1]}°C) & ${g2} (${GOODS[g2]?.temp[0]}→${GOODS[g2]?.temp[1]}°C) — xung đột nhiệt độ!`}</div>`;
+  if(!ok) notify(`❌ ${g1} + ${g2} không tương thích nhiệt!`,'r');
+}
+function bookTrip(){
+  notify(`${ic('refresh','#fff',13)} Đang tìm tài xế gần nhất...`);
+  setTimeout(()=>notify('✓ Kết nối tài xế Nguyễn Văn Hùng (4.8★) · ETA đến lấy hàng: 18 phút','g'),2000);
+}
+function callDriver(){notify('📞 Đang gọi tài xế Nguyễn Văn Hùng (0901234567)...','g');}
+function acceptLoad(i){
+  const btn=el(`lb${i}`),card=el(`l${i}`); if(!btn||!card) return;
+  btn.innerHTML='✓ Đã nhận đơn'; btn.className='btn btn-p btn-sm btn-fw';
+  card.style.borderColor='var(--g)'; card.style.background='var(--gl)';
+  notify('✓ Nhận đơn chiều về thành công! Thanh toán 24h sau giao.','g');
+}
+
+// ── TEMP SIMULATION ──────────────────────────────────────────────
+function startTempSim(){
+  clearInterval(S.tempInt);
+  S.tempInt=setInterval(()=>{
+    VEHICLES.forEach(v=>{
+      v.temp=parseFloat((v.temp+(Math.random()-.48)*.3).toFixed(1));
+      if(v.status!=='alert') v.temp=Math.max(v.lo-.8,Math.min(v.hi+.8,v.temp));
+      const c=v.temp>=v.lo&&v.temp<=v.hi?'var(--g)':'var(--re)';
+      [`mtemp-${v.id}`,`btemp-${v.id}`,`atemp-${v.id}`].forEach(id=>{const e=el(id);if(e){e.textContent=v.temp+'°C';e.style.color=c;}});
+    });
+    const lt=el('lt'); if(lt){const t=VEHICLES[0].temp;lt.textContent=t+'°C';lt.style.color=t>=VEHICLES[0].lo&&t<=VEHICLES[0].hi?'var(--g)':'var(--re)';}
+    const mt=el('mytemp'); if(mt){const t=VEHICLES[0].temp;mt.textContent=t+'°C';mt.style.color=t>=VEHICLES[0].lo&&t<=VEHICLES[0].hi?'var(--gd)':'var(--re)';}
+  },3000);
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────
+render();
+// helper for plus icon
+function ic2(c='currentColor'){return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;}
+Object.assign(I,{plus:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`});
+</script>
+</body>
+</html>
