@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-<title>LogiFresh — Vận tải lạnh thông minh</title>
+<title>ColdMove — Vận tải lạnh thông minh</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -510,7 +510,7 @@ function renderLanding(){
     <nav class="lnav">
       <div class="lnav-logo">
         <div class="lnav-logo-mark">${ic('truck','#fff',15)}</div>
-        <span class="lnav-name">LogiFresh</span>
+        <span class="lnav-name">ColdMove</span>
         <span class="sbl-tag">BETA</span>
       </div>
       <div class="lnav-btns">
@@ -536,7 +536,7 @@ function renderLanding(){
         <div class="hero-badge">
           <div class="hero-badge-dot"></div>
           <span class="hero-badge-flag">🇻🇳</span>
-          <span>Nền tảng vận tải lạnh nông thủy hải sản Việt Nam</span>
+          <span>Nền tảng vận tải lạnh nông thủy hải sản hàng đầu Việt Nam</span>
         </div>
 
         <!-- Headline -->
@@ -553,7 +553,9 @@ function renderLanding(){
           <button class="btn-hero-sec" onclick="login('driver')">
             ${ic('star','var(--am)',15)} Đăng ký làm tài xế
           </button>
-          
+          <button class="btn-hero-dark" onclick="login('admin')">
+            ${ic('admin','#fff',15)} Xem Ops Demo
+          </button>
         </div>
 
         <!-- Trust bar -->
@@ -582,7 +584,7 @@ function renderLanding(){
     <!-- FEATURES -->
     <div class="lfeat">
       <div class="feat-header">
-        <h2 class="feat-h2">Tại sao chọn LogiFresh?</h2>
+        <h2 class="feat-h2">Tại sao chọn ColdMove?</h2>
         <p class="feat-sub">Chuyên biệt cho nông — thủy — hải sản Việt Nam</p>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px">
@@ -610,10 +612,10 @@ function renderLanding(){
           300+ tài xế đang hoạt động ngay lúc này
         </div>
         <h3 style="font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,32px);font-weight:800;color:#fff;margin-bottom:10px;letter-spacing:-.5px">Sẵn sàng bắt đầu?</h3>
-        <p style="color:#ffffff70;margin-bottom:24px;font-size:14px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.7">300+ tài xế và 50+ doanh nghiệp nông thủy sản đang tin dùng LogiFresh mỗi ngày</p>
+        <p style="color:#ffffff70;margin-bottom:24px;font-size:14px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.7">300+ tài xế và 50+ doanh nghiệp nông thủy sản đang tin dùng ColdMove mỗi ngày</p>
         <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
           <button class="btn-hero-primary" onclick="login('shipper')" style="box-shadow:none">Bắt đầu miễn phí →</button>
-           
+          <button class="btn-hero-sec" onclick="login('admin')" style="background:transparent;border-color:#ffffff30;color:#fff">Xem demo Admin</button>
         </div>
       </div>
     </div>
@@ -637,15 +639,15 @@ function logout(){
 function renderApp(){
   const isA=S.role==='admin', isDr=S.role==='driver', isSh=S.role==='shipper';
   const navMap={
-    driver:[{id:'dashboard',lbl:'Dashboard',i:'chart'},{id:'map',lbl:'Bản đồ',i:'map'},{id:'orders',lbl:'Chuyến',i:'pack'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
-    shipper:[{id:'dashboard',lbl:'Đặt hàng',i:'truck'},{id:'map',lbl:'Theo dõi',i:'map'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
-    admin:[{id:'dashboard',lbl:'Tổng quan',i:'chart'},{id:'map',lbl:'Fleet Map',i:'map'},{id:'orders',lbl:'Đơn hàng',i:'pack'},{id:'customers',lbl:'Khách hàng',i:'users'},{id:'drivers',lbl:'Tài xế',i:'truck'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
+    driver:[{id:'dashboard',lbl:'Dashboard',i:'chart'},{id:'map',lbl:'Bản đồ',i:'map'},{id:'combo',lbl:'Combo đơn',i:'bolt'},{id:'orders',lbl:'Chuyến',i:'pack'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
+    shipper:[{id:'dashboard',lbl:'Đặt hàng',i:'truck'},{id:'checker',lbl:'Kiểm tra ghép',i:'check'},{id:'map',lbl:'Theo dõi',i:'map'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
+    admin:[{id:'dashboard',lbl:'Tổng quan',i:'chart'},{id:'matching',lbl:'Matching Engine',i:'bolt'},{id:'map',lbl:'Fleet Map',i:'map'},{id:'orders',lbl:'Đơn hàng',i:'pack'},{id:'customers',lbl:'Khách hàng',i:'users'},{id:'drivers',lbl:'Tài xế',i:'truck'},{id:'passport',lbl:'Hộ chiếu',i:'shield'}],
   };
   const navItems=navMap[S.role]||navMap.shipper;
   const ux={driver:{name:'Nguyễn Văn Hùng',role:'Tài xế · 4.8★',color:'#0CB87A'},shipper:{name:'Tiến Phát Export',role:'Người gửi hàng',color:'#3B82F6'},admin:{name:'Ops Manager',role:'Quản trị hệ thống',color:'#7C3AED'}};
   const u=ux[S.role];
-  const mobNav=navItems.slice(0,isA?5:4);
-  const pageTitle={dashboard:'Tổng quan',map:'Bản đồ',orders:isA?'Đơn hàng':'Chuyến của tôi',customers:'Khách hàng',drivers:'Tài xế',passport:'Cold Passport',admin:'Ops Center'}[S.nav]||'LogiFresh';
+  const mobNav=navItems.slice(0,isA?5:5);
+  const pageTitle={dashboard:'Tổng quan',map:'Bản đồ',orders:isA?'Đơn hàng':'Chuyến của tôi',customers:'Khách hàng',drivers:'Tài xế',passport:'Cold Passport',admin:'Ops Center',matching:'Matching Engine',combo:'Combo đơn',checker:'Kiểm tra ghép đơn'}[S.nav]||'ColdMove';
 
   el('app').innerHTML=`
     <div id="mob-hdr">
@@ -666,7 +668,7 @@ function renderApp(){
       <div id="sidebar">
         <div class="sbl">
           <div class="sbl-mark">${ic('truck','#fff',14)}</div>
-          <span class="sbl-name">LogiFresh</span>
+          <span class="sbl-name">ColdMove</span>
           ${isA?`<span class="sbl-tag">ADMIN</span>`:''}
         </div>
         <div class="sbu">
@@ -716,6 +718,9 @@ function renderPage(){
   else if(S.nav==='customers') p.innerHTML=customersPage();
   else if(S.nav==='drivers') p.innerHTML=driversPage();
   else if(S.nav==='admin') p.innerHTML=opsCenter();
+  else if(S.nav==='matching') p.innerHTML=matchingEngine();
+  else if(S.nav==='combo') p.innerHTML=comboPage();
+  else if(S.nav==='checker') p.innerHTML=checkerPage();
   attachEv();
 }
 
@@ -1156,7 +1161,7 @@ function driversPage(){
 function passportPage(){
   return `<div class="page">
     <div class="ph"><h1 class="pt">${ic('shield','var(--g)',17)} Cold Passport · Blockchain</h1>
-    <p class="ps">Hộ chiếu chuyển bất biến · Xác thực nhiệt độ · Bằng chứng pháp lý</p></div>
+    <p class="ps">Hộ chiếu vận chuyển bất biến · Xác thực nhiệt độ · Bằng chứng pháp lý</p></div>
     <div class="g2">
       <div>
         <div class="vs" id="plist">
@@ -1206,7 +1211,7 @@ function selPassport(id){
     el('pdetail').innerHTML=`<div class="card fade">
       <div class="ct">${ic('shield','var(--g)')} ${p.id}</div>
       <div style="margin-bottom:12px">
-        <div class="blk" style="background:#f0fdf4;border-color:#86efac"><div style="font-size:9px;color:var(--mu);margin-bottom:3px">GENESIS</div><div class="mono" style="color:#166534;font-size:10px">LogiFresh_vn_mainnet</div></div>
+        <div class="blk" style="background:#f0fdf4;border-color:#86efac"><div style="font-size:9px;color:var(--mu);margin-bottom:3px">GENESIS</div><div class="mono" style="color:#166534;font-size:10px">coldmove_vn_mainnet</div></div>
         <div class="blk-conn ok"></div>
         <div class="blk ${p.status==='verified'?'ok':'bad'}">
           <div style="font-size:9px;color:var(--mu);margin-bottom:4px">BLOCK #${Math.floor(Math.random()*9999)+10000}</div>
@@ -1419,8 +1424,432 @@ function startTempSim(){
   },3000);
 }
 
-// ── BOOT ─────────────────────────────────────────────────────────
-render();
+// ── MATCHING DATA ─────────────────────────────────────────────────
+const WAITING_POOL = [
+  {id:'WP-001',goods:'Xoài cát Hòa Lộc',weight:1.2,from:'Tiền Giang',to:'TP.HCM',temp:'10-14°C',mode:'save',waitH:2.5,price:980000,shipper:'Vườn Xoài Tám Kiên',phone:'0910999111'},
+  {id:'WP-002',goods:'Tôm thẻ đông lạnh',weight:2.8,from:'Cà Mau',to:'TP.HCM',temp:'-18→-22°C',mode:'save',waitH:4.1,price:2200000,shipper:'Cty Hải Sản Phương Nam',phone:'0921888222'},
+  {id:'WP-003',goods:'Cải thảo',weight:0.9,from:'Đà Lạt',to:'TP.HCM',temp:'0-4°C',mode:'save',waitH:1.8,price:720000,shipper:'Farm Rau Sạch Lâm Đồng',phone:'0932777333'},
+  {id:'WP-004',goods:'Nhãn lồng Hưng Yên',weight:1.5,from:'Hưng Yên',to:'Hà Nội',temp:'1-5°C',mode:'now',waitH:0,price:1850000,shipper:'HTX Nhãn Hưng Yên',phone:'0943666444'},
+  {id:'WP-005',goods:'Cá tra fillet đông',weight:4.2,from:'An Giang',to:'TP.HCM',temp:'-18→-20°C',mode:'save',waitH:6.2,price:3100000,shipper:'Cty TNHH Cá Tra Sạch',phone:'0954555555'},
+];
+const COMBO_PROPOSALS = [
+  {id:'CB-001',orders:['WP-002','WP-005'],driver:'V001',driverName:'Nguyễn Văn Hùng',totalPrice:5300000,bonus:530000,route:'Cà Mau → An Giang → TP.HCM',km:280,eta:'6h20p',compat:true,status:'pending',score:92},
+  {id:'CB-002',orders:['WP-001','WP-003'],driver:'V005',driverName:'Võ Thị Hoa',totalPrice:1700000,bonus:170000,route:'Tiền Giang → Đà Lạt → TP.HCM',km:190,eta:'4h50p',compat:true,status:'pending',score:78},
+  {id:'CB-003',orders:['WP-004'],driver:'V002',driverName:'Trần Thị Mai',totalPrice:1850000,bonus:92500,route:'Hưng Yên → Hà Nội',km:65,eta:'1h40p',compat:true,status:'accepted',score:85},
+];
+const AUCTION_POOL = [
+  {id:'AU-001',goods:'Bơ Booth Đắk Lắk',weight:2.0,from:'Đắk Lắk',to:'Đà Nẵng',temp:'5-10°C',basePrice:3200000,minAccept:2800000,currentBid:null,bids:[],deadline:'23:59',status:'open'},
+  {id:'AU-002',goods:'Tôm hùm sống',weight:0.3,from:'Nha Trang',to:'TP.HCM',temp:'5-12°C',basePrice:8500000,minAccept:7000000,currentBid:7200000,bids:[{driver:'V003',price:7200000}],deadline:'18:30',status:'open'},
+];
+
+// ── PRICING ENGINE ────────────────────────────────────────────────
+function calcDynPrice(basePrice, mode, waitH, weight, auctionBid=null){
+  let price = basePrice * weight;
+  if(mode==='now') price *= 1.28;               // +28% urgent fee
+  if(mode==='save') price *= 0.68;              // -32% shared discount
+  if(waitH > 4) price *= 0.95;                  // -5% nếu chờ quá 4h → subsidy
+  if(auctionBid) price = Math.max(auctionBid, basePrice*weight*0.82);
+  return Math.round(price/1000)*1000;
+}
+
+// ── TẦNG 1: COMPATIBILITY CHECKER (Shipper) ───────────────────────
+function checkerPage(){
+  const cats=[...new Set(Object.values(GOODS).map(g=>g.cat))];
+  return `<div class="page">
+    <div class="ph">
+      <h1 class="pt">${ic('check','var(--g)',18)} Kiểm tra ghép đơn</h1>
+      <p class="ps">Tầng 1 — Công cụ kiểm tra tương thích hàng hóa trước khi đặt chuyến</p>
+    </div>
+
+    <!-- How it works banner -->
+    <div style="background:linear-gradient(135deg,#E8FAF4,#f0fff8);border:1.5px solid #A7F3D0;border-radius:12px;padding:16px 20px;margin-bottom:18px">
+      <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:8px">⚡ Cách hoạt động</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;color:var(--gd)">
+        ${[['1. Chọn hàng','Chọn loại hàng bạn muốn gửi và hàng muốn ghép'],['2. Hệ thống kiểm tra','AI so sánh dải nhiệt độ, tương thích ngay lập tức'],['3. Đặt chuyến','Nếu OK → đặt ngay với giá ghép tiết kiệm 32-35%']].map(([t,d])=>`<div style="background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #A7F3D0"><div style="font-weight:700;margin-bottom:3px">${t}</div><div style="color:var(--mu)">${d}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="vs">
+        <!-- Checker tool -->
+        <div class="card">
+          <div class="ct">${ic('check','var(--g)')} Công cụ kiểm tra tương thích</div>
+
+          <div style="margin-bottom:12px">
+            <label class="lbl">Hàng của bạn (Hàng chính)</label>
+            <select class="sel" id="ck1" onchange="runChecker()">
+              <option value="">-- Chọn loại hàng của bạn --</option>
+              ${Object.entries(GOODS).map(([k,v])=>`<option value="${k}">${k} · ${v.temp[0]}→${v.temp[1]}°C · [${v.cat}]</option>`).join('')}
+            </select>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <label class="lbl">Hàng muốn ghép (Hàng 2)</label>
+            <select class="sel" id="ck2" onchange="runChecker()">
+              <option value="">-- Chọn hàng muốn ghép cùng --</option>
+              ${Object.entries(GOODS).map(([k,v])=>`<option value="${k}">${k} · ${v.temp[0]}→${v.temp[1]}°C · [${v.cat}]</option>`).join('')}
+            </select>
+          </div>
+
+          <div id="ck-result" style="min-height:60px"></div>
+
+          <div style="border-top:1px solid var(--bd);margin-top:14px;padding-top:14px">
+            <label class="lbl">Khối lượng (tấn)</label>
+            <input type="number" class="inp" id="ck-wt" value="1.5" min="0.1" step="0.1" oninput="runChecker()" style="margin-bottom:10px"/>
+            <div style="background:var(--bg);border-radius:9px;padding:12px;font-size:13px" id="ck-price-preview">
+              <div style="color:var(--mu)">Chọn loại hàng để xem ước giá</div>
+            </div>
+          </div>
+
+          <button class="btn btn-p btn-fw mt12" onclick="bookFromChecker()">Đặt chuyến ghép ngay →</button>
+        </div>
+
+        <!-- Waiting pool preview -->
+        <div class="card">
+          <div class="ct">${ic('clock','var(--am)')} Waiting Pool — Đơn đang chờ ghép</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:10px">Các đơn đang chờ — bạn có thể ghép cùng để tiết kiệm</div>
+          ${WAITING_POOL.filter(w=>w.mode==='save').slice(0,4).map(w=>`
+            <div style="border:1px solid var(--bd);border-radius:9px;padding:10px 12px;margin-bottom:7px;cursor:pointer;transition:all .12s" onmouseover="this.style.borderColor='var(--g)'" onmouseout="this.style.borderColor='var(--bd)'" onclick="prefillChecker('${w.goods}')">
+              <div class="hs mb4">
+                <span style="font-size:12px;font-weight:600">${w.goods}</span>
+                <div class="sp"></div>
+                <span style="font-size:11px;color:var(--g);font-weight:600">${w.temp}</span>
+              </div>
+              <div class="hs" style="font-size:11px;color:var(--mu)">
+                <span>${w.from} → ${w.to} · ${w.weight}T</span>
+                <div class="sp"></div>
+                <span style="color:var(--am)">${ic('clock','var(--am)',11)} Chờ ${w.waitH}h</span>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="vs">
+        <!-- Mode selector -->
+        <div class="card">
+          <div class="ct">${ic('coin','var(--g)')} Chọn chế độ vận chuyển</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Tầng 1 — Mô hình giá kép: Bạn quyết định ưu tiên</div>
+
+          <div id="mode-save" onclick="selectShipMode('save')" style="border:1.5px solid var(--g);background:var(--gl);border-radius:11px;padding:14px 16px;cursor:pointer;margin-bottom:8px;transition:all .15s">
+            <div class="hs mb6">
+              <div style="width:36px;height:36px;border-radius:9px;background:var(--g);display:flex;align-items:center;justify-content:center">${ic('coin','#fff',18)}</div>
+              <div>
+                <div style="font-weight:700;font-size:14px;color:var(--gd)">Tiết kiệm · Chờ ghép</div>
+                <div style="font-size:11px;color:var(--g)">Tiết kiệm 32–35% · Hệ thống ghép trong 4–12h</div>
+              </div>
+              <div class="sp"></div>
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ic('check','#fff',12)}</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:9px 11px;font-size:12px">
+              <div style="color:var(--mu);margin-bottom:3px">Bạn trao quyền cho hệ thống tối ưu lịch trình trong:</div>
+              <div style="display:flex;gap:6px">
+                ${['4h','8h','12h','24h'].map(t=>`<span id="wait-${t}" onclick="selectWait('${t}');event.stopPropagation()" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:${t==='12h'?'var(--g)':'var(--bg)'};color:${t==='12h'?'#fff':'var(--mu)'};border:1px solid ${t==='12h'?'var(--g)':'var(--bd)'}">${t}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div id="mode-now" onclick="selectShipMode('now')" style="border:1.5px solid var(--bd);border-radius:11px;padding:14px 16px;cursor:pointer;transition:all .15s">
+            <div class="hs">
+              <div style="width:36px;height:36px;border-radius:9px;background:#F59E0B;display:flex;align-items:center;justify-content:center">${ic('bolt','#fff',18)}</div>
+              <div>
+                <div style="font-weight:700;font-size:14px">Đi ngay · Premium</div>
+                <div style="font-size:11px;color:var(--mu)">+28% phí khẩn · Xe đến trong 30–60p</div>
+              </div>
+              <div class="sp"></div>
+              <div id="now-check" style="width:20px;height:20px;border-radius:50%;background:var(--bd);flex-shrink:0"></div>
+            </div>
+          </div>
+
+          <!-- Live price engine output -->
+          <div id="price-engine-out" style="margin-top:14px;background:var(--tx);border-radius:11px;padding:16px;color:#fff">
+            <div style="font-size:11px;color:#fff8;margin-bottom:4px">Pricing Engine · Tính thời gian thực</div>
+            <div class="hs">
+              <div>
+                <div id="pe-price" style="font-size:28px;font-weight:700;letter-spacing:-1px">${fmt(965000)}</div>
+                <div id="pe-mode" style="font-size:12px;color:#A7F3D0;margin-top:2px">Tiết kiệm · Chờ 12h · 1.5T</div>
+              </div>
+              <div class="sp"></div>
+              <div style="text-align:right">
+                <div style="font-size:11px;color:#fff8">Giá gốc</div>
+                <div id="pe-orig" style="font-size:14px;font-weight:600;text-decoration:line-through;color:#ffffff60">${fmt(1420000)}</div>
+                <div id="pe-save" style="font-size:12px;color:#A7F3D0;font-weight:600">Tiết kiệm 32%</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid #ffffff15;margin-top:12px;padding-top:10px;font-size:11px;display:flex;flex-direction:column;gap:5px">
+              <div class="hs"><span style="color:#fff8">Giá cơ sở</span><div class="sp"></div><span id="pe-base">${fmt(820000)}/T</span></div>
+              <div class="hs"><span style="color:#fff8">Phí khẩn cấp</span><div class="sp"></div><span id="pe-urgent" style="color:#FCA5A5">+0%</span></div>
+              <div class="hs"><span style="color:#fff8">Discount ghép</span><div class="sp"></div><span id="pe-disc" style="color:#A7F3D0">-32%</span></div>
+              <div class="hs"><span style="color:#fff8">Subsidy chờ lâu</span><div class="sp"></div><span id="pe-sub" style="color:#FDE68A">±0%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drivers nearby -->
+        <div class="card">
+          <div class="ct">${ic('truck','var(--g)')} Tài xế sẵn sàng gần bạn</div>
+          ${DRIVERS.filter(d=>d.status==='available'||d.status==='driving').slice(0,4).map((d,i)=>`
+            <div class="hs" style="padding:8px 0;border-bottom:1px solid var(--bd)">
+              <div class="sba" style="background:var(--g);width:30px;height:30px;font-size:11px;flex-shrink:0">${d.name.charAt(0)}</div>
+              <div style="flex:1"><div style="font-size:12px;font-weight:600">${d.name}</div>
+                <div style="font-size:11px;color:var(--mu)">${d.plate} · ${stars(d.score)} · ${['2.1km','3.4km','1.8km','5.2km'][i]} xa</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:11px;font-weight:600;color:var(--g)">ETA ${['8p','12p','6p','18p'][i]}</div>
+                ${bd(d.status==='available'?'Sẵn sàng':'Đang chạy',d.status==='available'?'g':'b')}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── TẦNG 2 & 3: COMBO PAGE (Driver) ──────────────────────────────
+function comboPage(){
+  return `<div class="page">
+    <div class="ph">
+      <div class="hs">
+        <div>
+          <h1 class="pt">${ic('bolt','var(--am)',18)} Combo đơn hàng</h1>
+          <p class="ps">Tầng 2 — Hệ thống đề xuất combo tối ưu cho bạn · Chọn nhận hoặc từ chối</p>
+        </div>
+        <div class="sp"></div>
+        ${bd('3 combo đang chờ','a')}
+      </div>
+    </div>
+
+    <!-- Incentive banner -->
+    <div style="background:linear-gradient(135deg,#FEF3C7,#fffbeb);border:1.5px solid #F59E0B44;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">💡</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#92400E">Nhận combo = Thu nhập cao hơn 40%</div>
+        <div style="font-size:12px;color:#B45309;margin-top:2px">Combo ghép đơn tối ưu lộ trình — ít km hơn, nhiều tiền hơn. Nhận hôm nay để được ưu tiên đơn ghép chiều về!</div>
+      </div>
+    </div>
+
+    <!-- Combo proposals -->
+    <div class="vs mb16">
+      ${COMBO_PROPOSALS.map(c=>`
+        <div id="combo-${c.id}" style="border:1.5px solid ${c.status==='accepted'?'var(--g)':c.status==='rejected'?'var(--bd)':'#FDE68A'};border-radius:12px;padding:16px 18px;background:${c.status==='accepted'?'var(--gl)':c.status==='rejected'?'#fafafa':'#fffbeb'};opacity:${c.status==='rejected'?.5:1};transition:all .2s">
+          <div class="hs mb10">
+            <div style="width:38px;height:38px;border-radius:10px;background:${c.status==='accepted'?'var(--g)':c.status==='rejected'?'#ccc':'#F59E0B'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${ic('bolt','#fff',18)}</div>
+            <div>
+              <div style="font-size:14px;font-weight:700">${c.id} — Combo ${c.orders.length} đơn</div>
+              <div style="font-size:11px;color:var(--mu)">${c.route} · ${c.km}km · ${c.eta}</div>
+            </div>
+            <div class="sp"></div>
+            <div style="text-align:right">
+              <div style="font-size:18px;font-weight:700;color:${c.status==='accepted'?'var(--g)':'var(--tx)'}">${fmt(c.totalPrice)}</div>
+              <div style="font-size:11px;color:var(--g);font-weight:600">+${fmt(c.bonus)} bonus</div>
+            </div>
+          </div>
+
+          <!-- Orders in combo -->
+          <div style="background:#fff;border-radius:9px;padding:10px 12px;margin-bottom:12px">
+            <div style="font-size:11px;font-weight:700;color:var(--mu);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Đơn hàng trong combo</div>
+            ${c.orders.map(oid=>{const w=WAITING_POOL.find(x=>x.id===oid)||{goods:'—',from:'?',to:'?',weight:0,temp:'?'};return `
+              <div class="hs mb6" style="border-bottom:1px solid var(--bg);padding-bottom:6px">
+                <span class="mono" style="font-size:10px;color:var(--gd);font-weight:600;width:50px;flex-shrink:0">${oid}</span>
+                <span style="font-size:12px;font-weight:500;flex:1">${w.goods}</span>
+                <span style="font-size:11px;color:var(--mu)">${w.from}→${w.to} · ${w.weight}T</span>
+                <span style="font-size:10px;background:var(--gl);color:var(--gd);padding:2px 7px;border-radius:5px;margin-left:6px;font-weight:600">${w.temp}</span>
+              </div>`;}).join('')}
+          </div>
+
+          <!-- Score & compatibility -->
+          <div class="g3 mb12" style="gap:8px">
+            <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center">
+              <div style="font-size:10px;color:var(--mu)">Match Score</div>
+              <div style="font-size:18px;font-weight:700;color:${c.score>=85?'var(--g)':c.score>=70?'var(--am)':'var(--re)'}">${c.score}</div>
+              <div style="font-size:9px;color:var(--mu)">/ 100</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center">
+              <div style="font-size:10px;color:var(--mu)">Nhiệt độ</div>
+              <div style="font-size:14px;font-weight:700;color:${c.compat?'var(--g)':'var(--re)'}">${c.compat?'✓ OK':'✗'}</div>
+              <div style="font-size:9px;color:var(--mu)">Tương thích</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:9px;text-align:center">
+              <div style="font-size:10px;color:var(--mu)">Backhaul</div>
+              <div style="font-size:14px;font-weight:700;color:var(--g)">✓</div>
+              <div style="font-size:9px;color:var(--mu)">Ưu tiên về</div>
+            </div>
+          </div>
+
+          ${c.status==='pending'?`
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <button class="btn btn-p btn-fw" onclick="acceptCombo('${c.id}')">${ic('check','#fff',14)} Nhận combo này</button>
+              <button class="btn btn-s btn-fw" onclick="rejectCombo('${c.id}')">${ic('warn','var(--re)',14)} Từ chối</button>
+            </div>`
+          : c.status==='accepted'?`<div style="text-align:center;padding:8px;background:var(--gl);border-radius:8px;font-size:13px;font-weight:600;color:var(--gd)">✓ Đã nhận combo — Bắt đầu lộ trình</div>`
+          : `<div style="text-align:center;padding:8px;background:#f9fafb;border-radius:8px;font-size:12px;color:var(--mu)">Đã từ chối</div>`}
+        </div>`).join('')}
+    </div>
+
+    <!-- Tầng 3: Sàn đấu giá ngược -->
+    <div style="border:2px solid #7C3AED44;border-radius:14px;padding:18px 20px;background:linear-gradient(135deg,#EDE9FE,#f5f3ff)">
+      <div class="hs mb12">
+        <div style="width:38px;height:38px;border-radius:10px;background:#7C3AED;display:flex;align-items:center;justify-content:center">${ic('bolt','#fff',18)}</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#4C1D95">Tầng 3 — Sàn đấu giá ngược</div>
+          <div style="font-size:12px;color:#6D28D9">Đơn chưa có xe nhận — Bạn đề xuất giá, hệ thống khớp ngay</div>
+        </div>
+        ${bd('2 đơn đang mở','pu')}
+      </div>
+
+      ${AUCTION_POOL.map(a=>`
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid #DDD6FE">
+          <div class="hs mb8">
+            <span class="mono" style="font-size:12px;font-weight:600;color:#4C1D95">${a.id}</span>
+            ${bd('🔴 Đang mở','pu')}
+            <div class="sp"></div>
+            <span style="font-size:11px;color:var(--mu)">Đóng lúc ${a.deadline}</span>
+          </div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px">${a.goods} · ${a.weight}T · ${a.from} → ${a.to}</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:10px">${a.temp} · Giá sàn KH: ${fmt(a.basePrice*a.weight)} · Sàn chấp nhận tối thiểu: ${fmt(a.minAccept)}</div>
+          ${a.currentBid?`<div style="background:#EDE9FE;border-radius:7px;padding:7px 10px;font-size:12px;color:#4C1D95;margin-bottom:10px;font-weight:600">Bid hiện tại: ${fmt(a.currentBid)} — Bạn có thể outbid thấp hơn!</div>`:''}
+          <div class="hs" style="gap:8px">
+            <input type="number" id="bid-${a.id}" class="inp" placeholder="Nhập giá của bạn" style="font-size:13px" value="${a.currentBid?a.currentBid-50000:''}"/>
+            <button class="btn btn-fw" style="background:#7C3AED;color:#fff;flex-shrink:0;white-space:nowrap" onclick="submitBid('${a.id}')">${ic('bolt','#fff',13)} Đặt giá</button>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── TẦNG 2: MATCHING ENGINE (Admin) ──────────────────────────────
+function matchingEngine(){
+  const now = new Date();
+  return `<div class="page">
+    <div class="ph">
+      <div class="hs">
+        <div>
+          <h1 class="pt">${ic('bolt','var(--pu)',18)} Matching Engine — Bộ não ghép đơn</h1>
+          <p class="ps">Hệ thống tự động phân tích + ghép + đề xuất combo · Cập nhật real-time</p>
+        </div>
+        <div class="sp"></div>
+        <button class="btn btn-p btn-sm" onclick="runAutoMatch()">${ic('refresh','#fff',13)} Chạy Auto-Match</button>
+      </div>
+    </div>
+
+    <!-- 3-layer overview -->
+    <div class="g3 mb14">
+      ${[
+        {layer:'Tầng 1',title:'Waiting Pool',val:WAITING_POOL.length+' đơn',sub:WAITING_POOL.filter(w=>w.mode==='save').length+' chờ ghép · '+WAITING_POOL.filter(w=>w.mode==='now').length+' đi ngay',c:'var(--g)',i:'clock'},
+        {layer:'Tầng 2',title:'Combo Proposals',val:COMBO_PROPOSALS.length+' combo',sub:COMBO_PROPOSALS.filter(c=>c.status==='pending').length+' chờ tài xế · '+COMBO_PROPOSALS.filter(c=>c.status==='accepted').length+' đã nhận',c:'var(--am)',i:'bolt'},
+        {layer:'Tầng 3',title:'Auction Pool',val:AUCTION_POOL.length+' đơn',sub:AUCTION_POOL.filter(a=>a.status==='open').length+' đang mở · '+AUCTION_POOL.reduce((s,a)=>s+a.bids.length,0)+' bid',c:'var(--pu)',i:'coin'},
+      ].map(x=>`
+        <div class="card" style="border-left:4px solid ${x.c}">
+          <div class="hs mb6"><span style="font-size:10px;font-weight:700;color:${x.c};text-transform:uppercase;letter-spacing:.5px">${x.layer}</span>${ic(x.i,x.c,14)}</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px">${x.title}</div>
+          <div style="font-size:22px;font-weight:800;color:${x.c};letter-spacing:-.5px">${x.val}</div>
+          <div style="font-size:11px;color:var(--mu);margin-top:3px">${x.sub}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="g2">
+      <div class="vs">
+        <!-- Waiting pool table -->
+        <div class="card">
+          <div class="ct">${ic('clock','var(--am)')} Waiting Pool · Tầng 1</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:10px">Đơn hàng đang chờ — hệ thống đang tìm cặp ghép tối ưu</div>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead><tr><th>ID</th><th>Hàng</th><th>Tuyến</th><th>Chế độ</th><th>Chờ</th><th>Giá động</th><th>Action</th></tr></thead>
+              <tbody>
+                ${WAITING_POOL.map(w=>{
+                  const dynP=calcDynPrice(820000,w.mode,w.waitH,w.weight);
+                  const subsidy=w.waitH>4;
+                  return `<tr>
+                    <td class="mono" style="font-size:11px;font-weight:600;color:var(--gd)">${w.id}</td>
+                    <td style="font-size:12px">${w.goods.substring(0,16)}</td>
+                    <td style="font-size:11px;color:var(--mu)">${w.from.split(' ')[0]}→${w.to.split(' ')[0]}</td>
+                    <td>${bd(w.mode==='save'?'⏳ Tiết kiệm':'⚡ Ngay',w.mode==='save'?'a':'r')}</td>
+                    <td style="font-size:11px;color:${w.waitH>4?'var(--re)':'var(--mu)'}">${w.waitH}h${subsidy?' ⚠':''}</td>
+                    <td style="font-weight:700;color:var(--g);font-size:12px">${fmt(dynP)}</td>
+                    <td><button class="btn btn-s btn-sm" onclick="forceMatch('${w.id}')" style="font-size:10px;padding:4px 8px">${ic('bolt','var(--pu)',11)} Match</button></td>
+                  </tr>`;}).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Combo proposals -->
+        <div class="card">
+          <div class="ct">${ic('bolt','var(--am)')} Combo Proposals · Tầng 2</div>
+          ${COMBO_PROPOSALS.map(c=>`
+            <div style="border:1.5px solid ${c.status==='accepted'?'var(--g)':c.status==='rejected'?'var(--bd)':'#FDE68A'};border-radius:10px;padding:12px 14px;margin-bottom:8px;background:${c.status==='accepted'?'var(--gl)':'#fff'}">
+              <div class="hs mb6">
+                <span class="mono" style="font-size:12px;font-weight:600;color:var(--gd)">${c.id}</span>
+                ${bd(c.status==='accepted'?'✓ Nhận':'c.status==="rejected"?\'Từ chối\':\'⏳ Chờ\'',c.status==='accepted'?'g':c.status==='rejected'?'gray':'a')}
+                <div class="sp"></div>
+                <span style="font-size:13px;font-weight:700;color:var(--g)">${fmt(c.totalPrice)}</span>
+              </div>
+              <div style="font-size:12px;color:var(--mu);margin-bottom:6px">${c.driverName} · ${c.route} · Score: <strong style="color:${c.score>=85?'var(--g)':c.score>=70?'var(--am)':'var(--re)'}">${c.score}</strong>/100</div>
+              <div class="hs" style="gap:4px">
+                ${c.orders.map(o=>`<span style="font-size:10px;background:var(--gl);color:var(--gd);padding:2px 7px;border-radius:5px;font-weight:600">${o}</span>`).join('')}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="vs">
+        <!-- Auction pool -->
+        <div class="card" style="border:1.5px solid #DDD6FE">
+          <div class="ct" style="color:#4C1D95">${ic('bolt','var(--pu)')} Auction Pool · Tầng 3</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:12px">Đơn không có xe nhận → kích hoạt đấu giá ngược</div>
+          ${AUCTION_POOL.map(a=>`
+            <div style="border:1px solid #DDD6FE;border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#FAFAFA">
+              <div class="hs mb6">
+                <span class="mono" style="font-size:11px;font-weight:600;color:#4C1D95">${a.id}</span>
+                ${bd('🔴 Mở','pu')}
+                <div class="sp"></div>
+                <span style="font-size:11px;color:var(--mu)">Đóng ${a.deadline}</span>
+              </div>
+              <div style="font-size:12px;font-weight:600;margin-bottom:4px">${a.goods} · ${a.weight}T</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;font-size:11px">
+                <div style="background:var(--bg);border-radius:6px;padding:6px;text-align:center"><div style="color:var(--mu)">Giá KH trả</div><div style="font-weight:600">${fmt(a.basePrice*a.weight)}</div></div>
+                <div style="background:var(--bg);border-radius:6px;padding:6px;text-align:center"><div style="color:var(--mu)">Sàn min</div><div style="font-weight:600;color:var(--re)">${fmt(a.minAccept)}</div></div>
+                <div style="background:var(--bg);border-radius:6px;padding:6px;text-align:center"><div style="color:var(--mu)">Bid tốt nhất</div><div style="font-weight:600;color:${a.currentBid?'var(--g)':'var(--mu)'}">${a.currentBid?fmt(a.currentBid):'—'}</div></div>
+              </div>
+              <div class="hs" style="gap:7px">
+                <button class="btn btn-sm btn-fw" style="background:#7C3AED;color:#fff;flex:2" onclick="notify('✓ Đã khớp đơn ${a.id} với bid tốt nhất!','g')">Khớp ngay</button>
+                <button class="btn btn-s btn-sm" style="flex:1" onclick="notify('Đã gia hạn thêm 30p','a')">+30p</button>
+                <button class="btn btn-sm btn-r btn-sm" style="flex:1" onclick="notify('Đã hủy đấu giá ${a.id}','r')">Hủy</button>
+              </div>
+            </div>`).join('')}
+
+          <!-- Pricing Engine summary -->
+          <div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Pricing Engine · Formula</div>
+            <div style="background:var(--tx);border-radius:9px;padding:12px;font-family:'DM Mono',monospace;font-size:11px;color:#A7F3D0;line-height:1.8">
+              <div style="color:#FDE68A">// Công thức giá động</div>
+              <div>Price = Base × Weight</div>
+              <div style="color:#FCA5A5">if mode=NOW: × 1.28</div>
+              <div style="color:#A7F3D0">if mode=SAVE: × 0.68</div>
+              <div style="color:#FDE68A">if waitH > 4: × 0.95 (subsidy)</div>
+              <div style="color:#C4B5FD">if auction: max(bid, base×0.82)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matching stats -->
+        <div class="card">
+          <div class="ct">${ic('chart','var(--g)')} Hiệu suất Matching hôm nay</div>
+          ${[
+            ['Đơn vào Waiting Pool','8','g'],
+            ['Ghép thành công (Combo)','5','g'],
+            ['Tỉ lệ ghép','62.5%','g'],
+            ['Đơn qua Đấu giá','2','pu'],
+            ['Đơn bị hủy','1','r'],
+            ['Tiết kiệm TB cho KH','34.2%','g'],
+            ['Tăng thu nhập tài xế','+28.5%','g'],
+          ].map(([l,v,t])=>`<div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;color:var(--mu)">${l}</span><div class="sp"></div>${bd(v,t)}</div>`).join('')}
+          <button class="btn btn-s btn-fw btn-sm mt8" onclick="runAutoMatch()">${ic('refresh','var(--mu)')} Refresh Auto-Match</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 // helper for plus icon
 function ic2(c='currentColor'){return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;}
 Object.assign(I,{plus:`<svg width="W" height="W" viewBox="0 0 24 24" fill="none" stroke="C" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`});
