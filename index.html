@@ -60,6 +60,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 @keyframes particleFly{0%{opacity:0;transform:translateY(0) scale(0)}20%{opacity:1;transform:translateY(-20px) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.3)}}
 @keyframes typewriter{from{width:0}to{width:100%}}
 @keyframes blink2{0%,100%{border-right-color:var(--p)}50%{border-right-color:transparent}}
+@keyframes flashRed{0%,100%{opacity:.6}50%{opacity:.15}}
 @keyframes waveIn{from{clip-path:ellipse(50% 0% at 50% 100%)}to{clip-path:ellipse(150% 100% at 50% 100%)}}
 @keyframes ringExpand{0%{transform:scale(0);opacity:1}100%{transform:scale(3);opacity:0}}
 
@@ -855,378 +856,908 @@ function renderPage(){
   else if(S.nav==='matching')p.innerHTML=matchingPage();
 }
 
+// ── DRIVER STATE ──
+let DS={
+  online:true,
+  tripStep:'transit', // 'idle'|'incoming'|'pickup'|'transit'|'dropoff'|'payout'
+  countdown:30,
+  countdownTm:null,
+  alertFlash:false,alertTm:null,
+  pickupStage:'arrive', // 'arrive'|'verify'|'mismatch'|'done'
+  dropoffStage:'arrive', // 'arrive'|'otp'|'done'
+  otpInput:'',
+  wallet:18400000,
+  todayEarned:840000,
+};
+
 // ── DRIVER DASHBOARD ──
 function driverDB(){
   const trip=TRIPS[0];
   const temps=[-20.3,-20.1,-19.8,-20.2,-20.5,-20.1,-19.9,-20.3,-20.1,-20.0];
   const eta=calcETA([10.7400,106.6600],[10.0452,105.7469]);
-  return `<div class="page">
-    <div class="ph"><div class="hs">
-      <div>
-        <div class="pt">Xin chào, Nguyễn Văn Hùng 👋</div>
-        <div class="hs mt8" style="gap:6px">${bd('🏆 Tài xế Vàng','a')} ${bd('● IoT kết nối','p')} <span style="font-size:12px;color:var(--mu)">51C-88821</span></div>
+  const usedCap=3.2, totalCap=5;
+
+  return `<div class="page" id="driver-page">
+
+    <!-- ALERT OVERLAY (temperature breach) -->
+    <div id="alert-overlay" style="display:none;position:fixed;inset:0;z-index:500;pointer-events:none">
+      <div id="alert-flash" style="position:absolute;inset:0;background:#EF444460;animation:flashRed .5s ease-in-out infinite"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#B91C1C;color:#fff;border-radius:20px;padding:28px 36px;text-align:center;pointer-events:auto;max-width:340px;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+        <div style="font-size:44px;margin-bottom:10px">🚨</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:6px">VƯỢT NGƯỠNG NHIỆT!</div>
+        <div style="font-size:13px;opacity:.9;margin-bottom:16px;line-height:1.6">Nhiệt độ thùng xe đang <strong>-12.4°C</strong><br/>vượt ngưỡng cho phép (-18°C → -22°C)<br/>Kiểm tra hệ thống lạnh ngay!</div>
+        <div style="font-size:11px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;margin-bottom:16px">⚠ Hệ thống đang gửi cảnh báo đến Chủ hàng...</div>
+        <button onclick="dismissAlert()" style="background:#fff;color:#B91C1C;border:none;border-radius:10px;padding:10px 24px;font-weight:800;font-size:14px;cursor:pointer;width:100%">Đã kiểm tra — Tắt cảnh báo</button>
       </div>
-      <div class="sp"></div><div>${stars(4.8)}</div>
-    </div></div>
+    </div>
+
+    <!-- INCOMING ORDER POP-UP -->
+    <div id="incoming-popup" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(10,15,30,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:20px;padding:24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:fadeUp .25s ease">
+        <div class="hs mb14">
+          <div style="width:42px;height:42px;border-radius:12px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:22px">📦</div>
+          <div><div style="font-weight:800;font-size:15px">Đơn hàng mới!</div><div style="font-size:12px;color:var(--mu)">Ghép đơn · Tiêu chuẩn</div></div>
+          <div class="sp"></div>
+          <div id="countdown-circle" style="width:44px;height:44px;border-radius:50%;border:3px solid var(--re);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:var(--re)" id="cdnum">30</div>
+        </div>
+        <div style="background:var(--pll);border-radius:12px;padding:14px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--pd)">🔗 Đây là đơn hàng ghép</div>
+          ${[['Hàng','Cá tra fillet đông · 1.8T'],['Nhiệt','-18°C → -20°C'],['Điểm đón','Quận 7, TP.HCM'],['Điểm trả','Ninh Kiều, Cần Thơ'],['Doanh thu',fmt(1950000)]].map(([l,v])=>`
+          <div class="hs" style="padding:4px 0;font-size:12px"><span style="color:var(--mu);width:68px;flex-shrink:0">${l}</span><strong>${v}</strong></div>`).join('')}
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:var(--mu)">
+          <div style="font-weight:700;color:var(--tx);margin-bottom:4px">📍 Lộ trình đa điểm:</div>
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <span style="background:var(--p);color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">Đón 1</span>
+            <span style="color:var(--mu)">Q.8</span>→
+            <span style="background:#06B6D4;color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">Đón 2</span>
+            <span style="color:var(--mu)">Q.7</span>→
+            <span style="background:#10B981;color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">Trả 1</span>
+            <span style="color:var(--mu)">Cần Thơ</span>→
+            <span style="background:#F59E0B;color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">Trả 2</span>
+            <span style="color:var(--mu)">Cần Thơ</span>
+          </div>
+        </div>
+        <div class="g2" style="gap:8px">
+          <button class="btn btn-r btn-fw" onclick="rejectOrder()">✕ Từ chối</button>
+          <button class="btn btn-p btn-fw" onclick="acceptOrder()">✓ Nhận đơn</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER: Online toggle + tải trọng -->
+    <div class="ph">
+      <div class="hs">
+        <div>
+          <div class="pt">Nguyễn Văn Hùng 👋</div>
+          <div class="hs mt8" style="gap:6px">${bd('🏆 Tài xế Vàng','a')} <span class="mono" style="font-size:11px;color:var(--mu)">51C-88821</span></div>
+        </div>
+        <div class="sp"></div>
+        <div style="text-align:right">
+          <!-- Online toggle -->
+          <div class="hs" style="gap:8px;justify-content:flex-end;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:600;color:var(--mu)">Trạng thái</span>
+            <div id="online-toggle" onclick="toggleOnline()" style="width:48px;height:26px;border-radius:13px;background:${DS.online?'var(--p)':'#CBD5E1'};position:relative;cursor:pointer;transition:background .3s;flex-shrink:0">
+              <div style="position:absolute;top:3px;left:${DS.online?'23px':'3px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .3s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>
+            </div>
+            <span id="online-label" style="font-size:12px;font-weight:700;color:${DS.online?'var(--p)':'var(--mu)'}">${DS.online?'Online':'Offline'}</span>
+          </div>
+          <!-- Tải trọng -->
+          <div style="font-size:11px;color:var(--mu)">Xe 5T · Còn trống <strong style="color:var(--p)">${(totalCap-usedCap).toFixed(1)}T</strong></div>
+          <div style="width:120px;height:5px;background:var(--bd2);border-radius:3px;margin-top:4px;overflow:hidden">
+            <div style="height:100%;width:${(usedCap/totalCap)*100}%;background:linear-gradient(90deg,var(--p),var(--cy));border-radius:3px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
     <div class="g4 mb14">
-      ${[['Tháng này',fmt(12800000),'var(--p)','coin'],['Tổng chuyến','127','#06B6D4','truck'],['Cold Score','4.8/5','#F59E0B','star'],['Tổng thu',fmt(38500000),'var(--gr)','chart']].map(([l,v,c,i])=>`
+      ${[['Hôm nay',fmt(DS.todayEarned),'var(--p)','coin'],['Tổng chuyến','127','#06B6D4','truck'],['Cold Score','4.8/5','#F59E0B','star'],['Ví tài xế',fmt(DS.wallet),'var(--gr)','coin']].map(([l,v,c,i])=>`
       <div class="sc"><div class="si" style="background:${c}18">${ic(i,c,17)}</div><div class="sv" style="color:${c}">${v}</div><div class="sl">${l}</div></div>`).join('')}
     </div>
-    <div class="g2">
-      <div class="vs">
-        <div class="card">
-          <div class="ct">${ic('truck','var(--p)')} Chuyến đang chạy ${bd('● Live','p')}</div>
-          <div style="font-size:13px;color:var(--mu);margin-bottom:3px">${trip.from} → ${trip.to}</div>
-          <div style="font-size:12px;color:var(--mu);margin-bottom:12px">${trip.goods} · ${trip.weight}T · ${trip.temp} · Gói ${TIERS[trip.tier]?.label}</div>
-          <div class="hs mb8" style="font-size:12px;color:var(--mu)">${ic('clock','var(--mu)',13)} ETA: <strong style="color:var(--tx)">${eta.str}</strong><div class="sp"></div>${ic('pin','var(--mu)',13)} ${trip.progress}%</div>
-          <div class="prog mb10"><div class="prog-f" style="width:${trip.progress}%"></div></div>
-          <div style="background:var(--pll);border:1px solid var(--bd2);border-radius:10px;padding:14px">
-            <div class="hs mb6"><span style="font-size:12px;font-weight:700">${ic('thermo','var(--p)')} Nhiệt độ</span><div class="sp"></div><span id="lt" style="font-size:22px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;color:var(--p)">${trip.tempNow}°C</span></div>
-            ${tempBar(trip.tempNow,trip.lo,trip.hi)}
-            <div style="margin-top:10px;font-size:11px;color:var(--mu);margin-bottom:5px">Lịch sử 10 điểm (30s/lần)</div>
-            ${spark(temps,trip.lo,trip.hi)}
-          </div>
-        </div>
-        <div class="card">
-          <div class="ct">${ic('chart','var(--p)')} Thu nhập hôm nay</div>
-          <div style="font-size:30px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-1px;color:var(--p)">${fmt(840000)}</div>
-          <div style="margin-top:14px;font-size:13px">
-            ${[['Chuyến hoàn thành','2 chuyến'],['Quãng đường','187 km'],['Cold Score','4.8 ↑'],['Gói đã chạy','Tiêu chuẩn x2']].map(([l,v])=>`<div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd2)"><span style="color:var(--mu)">${l}</span><div class="sp"></div><span style="font-weight:600">${v}</span></div>`).join('')}
-          </div>
-        </div>
+
+    <!-- Trip step indicator -->
+    <div class="card mb14" style="padding:14px 18px">
+      <div style="font-size:11px;font-weight:700;color:var(--mu2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Tiến trình chuyến CM-001247</div>
+      <div style="display:flex;align-items:center;gap:0">
+        ${[['pickup','📍','Lấy hàng'],['transit','🚛','Vận chuyển'],['dropoff','📦','Giao hàng'],['payout','💰','Thanh toán']].map(([step,icon,lbl],i,arr)=>{
+          const states=['pickup','transit','dropoff','payout'];
+          const idx=states.indexOf(DS.tripStep);
+          const si=states.indexOf(step);
+          const done=si<idx, active=si===idx;
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative">
+            ${i>0?`<div style="position:absolute;top:14px;left:-50%;right:50%;height:2px;background:${done||active?'var(--p)':'var(--bd2)'}"></div>`:''}
+            <div style="width:28px;height:28px;border-radius:50%;background:${done?'var(--p)':active?'var(--p)':'var(--bd2)'};display:flex;align-items:center;justify-content:center;font-size:${done?'12px':'13px'};position:relative;z-index:1;border:${active?'2.5px solid var(--pd)':'none'};box-shadow:${active?'0 0 0 3px rgba(29,107,243,.2)':'none'}">${done?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>':icon}</div>
+            <div style="font-size:10px;font-weight:${active?'700':'500'};color:${active?'var(--p)':'var(--mu2)'}">${lbl}</div>
+          </div>`;
+        }).join('')}
       </div>
+    </div>
+
+    <div class="g2">
+      <div class="vs" id="driver-step-panel">
+        ${renderDriverStep()}
+      </div>
+
       <div class="vs">
+        <!-- IoT Temperature widget -->
+        <div class="card" id="temp-widget" style="${DS.tripStep==='transit'?'border:2px solid var(--p)':''}">
+          <div class="hs mb8">
+            <span style="font-size:13px;font-weight:700">${ic('thermo','var(--p)')} Nhiệt độ thùng xe</span>
+            <div class="sp"></div>
+            <span style="font-size:10px;color:var(--gr);font-weight:600">● IoT Live</span>
+          </div>
+          <div style="text-align:center;padding:10px 0">
+            <div id="lt" style="font-size:52px;font-weight:900;color:var(--p);letter-spacing:-2px;line-height:1">${trip.tempNow}°C</div>
+            <div style="font-size:12px;color:var(--gr);font-weight:600;margin-top:4px">✓ Trong ngưỡng an toàn</div>
+            <div style="font-size:11px;color:var(--mu);margin-top:2px">Yêu cầu: ${trip.lo}°C → ${trip.hi}°C</div>
+          </div>
+          ${tempBar(trip.tempNow,trip.lo,trip.hi)}
+          <div style="margin-top:12px;font-size:11px;color:var(--mu);margin-bottom:5px">Lịch sử 10 điểm</div>
+          ${spark(temps,trip.lo,trip.hi,290,44)}
+          <button onclick="triggerTempAlert()" class="btn btn-sm btn-fw mt8" style="background:#FEF2F2;color:#B91C1C;border:1px solid #FCA5A5;font-size:11px">🧪 Mô phỏng cảnh báo nhiệt</button>
+        </div>
+
+        <!-- Earnings today -->
         <div class="card">
-          <div class="ct">${ic('bolt','#F59E0B')} Đơn chiều về (Backhaul)</div>
-          ${[{from:'Cần Thơ',to:'TP.HCM',g:'Trái cây tươi',w:'2.1T',p:1950000,tier:'std',ok:true},{from:'Cần Thơ',to:'Bình Dương',g:'Cá tra fillet đông',w:'3.5T',p:2600000,tier:'hot',ok:true},{from:'Cần Thơ',to:'Đồng Nai',g:'Rau muống sạch',w:'1.2T',p:1100000,tier:'eco',ok:false}].map((l,i)=>`
-            <div id="l${i}" style="border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:9px">
-              <div class="hs mb5"><span style="font-size:12px;font-weight:700">${l.from} → ${l.to}</span><div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(l.p)}</span></div>
-              <div style="font-size:11px;color:var(--mu);margin-bottom:8px">${l.g} · ${l.w} · Gói ${TIERS[l.tier]?.label} ${l.ok?`<span style="color:var(--gr);font-weight:600">✓ Tương thích nhiệt</span>`:`<span style="color:var(--am);font-weight:600">⚠ Kiểm tra nhiệt</span>`}</div>
+          <div class="ct">${ic('coin','var(--p)')} Ví tài xế</div>
+          <div style="font-size:26px;font-weight:800;color:var(--p);letter-spacing:-1px">${fmt(DS.wallet)}</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Số dư khả dụng</div>
+          ${[['Hôm nay',fmt(DS.todayEarned)],['Tháng này',fmt(12800000)],['Đang đóng băng',fmt(2800000)]].map(([l,v])=>`
+          <div class="hs" style="padding:6px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--mu)">${l}</span><div class="sp"></div><span style="font-size:13px;font-weight:700">${v}</span></div>`).join('')}
+          <button onclick="notify('💳 Rút tiền về tài khoản ngân hàng...','g')" class="btn btn-o btn-sm btn-fw mt10">Rút tiền</button>
+        </div>
+
+        <!-- Backhaul -->
+        <div class="card">
+          <div class="hs mb10"><span style="font-size:13px;font-weight:700">${ic('bolt','#F59E0B')} Đơn chiều về</span><div class="sp"></div>
+            <button class="btn btn-p btn-sm" onclick="showIncomingOrder()">🔔 Nhận đơn mới</button>
+          </div>
+          ${[{from:'Cần Thơ',to:'TP.HCM',g:'Trái cây tươi',w:'2.1T',p:1950000,tier:'std',ok:true}].map((l,i)=>`
+            <div id="l${i}" style="border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px">
+              <div class="hs mb5"><span style="font-size:12px;font-weight:700">${l.from} → ${l.to}</span><div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p)">${fmt(l.p)}</span></div>
+              <div style="font-size:11px;color:var(--mu);margin-bottom:8px">${l.g} · ${l.w} · ${l.ok?'<span style="color:var(--gr);font-weight:600">✓ Nhiệt tương thích</span>':''}</div>
               <button id="lb${i}" class="btn btn-o btn-sm btn-fw" onclick="acceptLoad(${i})">Nhận đơn</button>
             </div>`).join('')}
         </div>
-        <div class="card">
-          <div class="ct">${ic('pack','var(--p)')} Chuyến của tôi</div>
-          ${TRIPS.filter(t=>t.vehicleId==='V001').map(t=>`
-            <div class="tc mb8">
-              <div class="hs mb5"><span class="mono" style="font-size:12px;font-weight:600;color:var(--pd)">${t.id}</span>${bd(t.status==='active'?'● Live':'✓ Xong',t.status==='active'?'p':'b')}<div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(t.price)}</span></div>
-              <div style="font-size:12px;color:var(--mu)">${t.from} → ${t.to}</div>
-              <div style="font-size:11px;color:var(--mu);">${t.goods} · ${t.weight}T ${t.mode==='share'?'· Ghép đơn':''} · ${TIERS[t.tier]?.icon} ${TIERS[t.tier]?.label}</div>
-              ${t.status==='active'?`<div class="prog mt8"><div class="prog-f" style="width:${t.progress}%"></div></div><div class="hs mt5" style="font-size:11px;color:var(--mu)"><span>${t.progress}%</span><div class="sp"></div><span>Nhiệt: <strong id="dtemp-${t.id}" style="color:var(--p)">${t.tempNow}°C</strong></span></div>`:''}
-            </div>`).join('')}
-        </div>
       </div>
     </div>
   </div>`;
 }
 
-// ── SHIPPER BOOKING FLOW (with tier selection) ──
+function renderDriverStep(){
+  const trip=TRIPS[0];
+  if(DS.tripStep==='pickup') return renderPickup();
+  if(DS.tripStep==='transit') return renderTransit(trip);
+  if(DS.tripStep==='dropoff') return renderDropoff();
+  if(DS.tripStep==='payout') return renderPayout();
+  return renderTransit(trip);
+}
+
+function renderTransit(trip){
+  const eta=calcETA([10.7400,106.6600],[10.0452,105.7469]);
+  return `<div class="card" style="border:2px solid var(--p)">
+    <div class="ct">${ic('truck','var(--p)')} Đang vận chuyển ${bd('● Live','p')}</div>
+    <div style="font-size:13px;color:var(--mu);margin-bottom:3px">${trip.from} → ${trip.to}</div>
+    <div style="font-size:12px;color:var(--mu);margin-bottom:10px">${trip.goods} · ${trip.weight}T · ${trip.temp}</div>
+    <div class="hs mb6" style="font-size:12px;color:var(--mu)">${ic('clock','var(--mu)',13)} ETA: <strong style="color:var(--tx)">${eta.str}</strong><div class="sp"></div><span>${trip.progress}%</span></div>
+    <div class="prog mb12"><div class="prog-f" style="width:${trip.progress}%"></div></div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:7px">📍 Điểm dừng tiếp theo</div>
+      ${[{lbl:'Đón 2',addr:'Quận 7 · Cty Thủy Sản Phương Nam',eta:'15p',done:true},{lbl:'Trả 1',addr:'Ninh Kiều · Cty XNK Cần Thơ',eta:'2h 30p',done:false}].map(s=>`
+      <div style="display:flex;align-items:center;gap:9px;padding:6px 0;${s.done?'opacity:.5':''}">
+        <div style="width:22px;height:22px;border-radius:6px;background:${s.done?'var(--gr)':'var(--p)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${s.done?'✓':ic('pin','#fff',10)}</div>
+        <div style="flex:1"><div style="font-weight:600">${s.lbl}: ${s.addr}</div><div style="font-size:11px;color:var(--mu)">ETA: ${s.eta}</div></div>
+      </div>`).join('')}
+    </div>
+    <div class="g2" style="gap:7px">
+      <button class="btn btn-s btn-sm btn-fw" onclick="setNav('map')">${ic('map','var(--mu)')} Bản đồ</button>
+      <button class="btn btn-p btn-sm btn-fw" onclick="setDriverStep('dropoff')">📦 Đến điểm trả →</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">${ic('pack','var(--p)')} Chuyến của tôi</div>
+    ${TRIPS.filter(t=>t.vehicleId==='V001').map(t=>`
+      <div class="tc mb8">
+        <div class="hs mb4"><span class="mono" style="font-size:12px;font-weight:600;color:var(--pd)">${t.id}</span>${bd(t.status==='active'?'● Live':'✓ Xong',t.status==='active'?'p':'b')}<div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p)">${fmt(t.price)}</span></div>
+        <div style="font-size:12px;color:var(--mu)">${t.goods} · ${t.weight}T · ${TIERS[t.tier]?.icon}${TIERS[t.tier]?.label}</div>
+        ${t.status==='active'?`<div class="prog mt7"><div class="prog-f" style="width:${t.progress}%"></div></div>`:``}
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderPickup(){
+  const stages={
+    arrive:`<div class="card" style="border:2px solid #F59E0B">
+      <div class="ct" style="color:#D97706">📍 Bước 2 — Đến điểm đón & Xác thực</div>
+      <div style="background:#FFF9EB;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">Kho hàng: Cty Thủy Sản Phương Nam</div>
+        <div style="font-size:12px;color:var(--mu)">123 Nguyễn Văn Linh, Quận 7, TP.HCM</div>
+        <div style="font-size:12px;color:var(--mu);margin-top:3px">Liên hệ: Anh Minh · 0901 234 567</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--pll);border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:12px">
+        ${ic('pin','var(--p)',14)}
+        <div><span style="font-weight:600;color:var(--pd)">GPS tự động check-in</span><br/><span style="color:var(--mu)">Hệ thống ghi nhận thời gian khi bạn đến đúng kho</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--mu);margin-bottom:10px">Hàng cần nhận: <strong>Cá tra fillet đông · 1.8T · Pallet</strong></div>
+      <button class="btn btn-p btn-fw" style="padding:12px" onclick="setPickupStage('verify')">📍 Đã đến điểm đón</button>
+    </div>`,
+    verify:`<div class="card" style="border:2px solid var(--p)">
+      <div class="ct" style="color:var(--pd)">📋 Xác thực quy cách & khối lượng</div>
+      <div style="background:var(--pll);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px">
+        <div style="font-weight:700;color:var(--pd);margin-bottom:8px">Thông tin đơn hàng</div>
+        ${[['Loại hàng','Cá tra fillet đông'],['Khối lượng','1.8 Tấn'],['Quy cách','Nguyên Pallet'],['Nhiệt yêu cầu','-18°C → -20°C']].map(([l,v])=>`
+        <div class="hs" style="padding:4px 0;font-size:12px;border-bottom:1px solid var(--bd2)"><span style="color:var(--mu);width:90px">${l}</span><strong>${v}</strong></div>`).join('')}
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px">Hàng thực tế có khớp không?</div>
+      <div class="g2" style="gap:8px">
+        <button class="btn btn-sm btn-fw" style="background:#D1FAE5;color:#065F46;border:1.5px solid #6EE7B7" onclick="setPickupStage('done')">✓ Đúng — Xác nhận & Lên hàng</button>
+        <button class="btn btn-sm btn-fw" style="background:#FEF2F2;color:#B91C1C;border:1.5px solid #FCA5A5" onclick="setPickupStage('mismatch')">✕ Sai — Báo cáo sai lệch</button>
+      </div>
+    </div>`,
+    mismatch:`<div class="card" style="border:2px solid var(--re)">
+      <div class="ct" style="color:#B91C1C">⚠ Báo cáo sai lệch</div>
+      <div style="background:#FEF2F2;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:#B91C1C">
+        Khách khai: <strong>Nguyên Pallet</strong> nhưng thực tế là <strong>Hàng rời</strong>. Yêu cầu điều chỉnh giá!
+      </div>
+      <div class="mb10"><label class="lbl">Quy cách thực tế</label>
+        <select class="sel" style="font-size:13px">
+          <option>Hàng rời (bốc vác thủ công)</option><option>Hàng đóng thùng</option><option>Nguyên Pallet</option>
+        </select>
+      </div>
+      <div style="background:var(--bg);border:1.5px dashed var(--bd);border-radius:10px;padding:16px;text-align:center;margin-bottom:12px;cursor:pointer" onclick="notify('📷 Mở camera...','g')">
+        <div style="font-size:24px;margin-bottom:4px">📷</div>
+        <div style="font-size:12px;color:var(--mu)">Chụp ảnh hàng hóa thực tế</div>
+      </div>
+      <button class="btn btn-p btn-fw" onclick="notify('✓ Đã gửi yêu cầu điều chỉnh giá về Chủ hàng. Chờ xác nhận...','g');setPickupStage('verify')" style="padding:11px">Gửi yêu cầu điều chỉnh giá</button>
+    </div>`,
+    done:`<div class="card" style="border:2px solid var(--gr);background:linear-gradient(135deg,#F0FDF4,#fff)">
+      <div class="ct" style="color:var(--grd)">✅ Đã lên hàng thành công</div>
+      <div style="background:#D1FAE5;border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px">
+        <div style="font-weight:700;color:#065F46;margin-bottom:6px">Biên bản giao nhận</div>
+        ${[['Hàng hóa','Cá tra fillet đông · 1.8T'],['Quy cách','Nguyên Pallet'],['Thời gian lên hàng','14:32 · 24/05/2026'],['GPS check-in','✓ Xác nhận · Quận 7']].map(([l,v])=>`
+        <div class="hs" style="padding:3px 0;font-size:12px"><span style="color:var(--grd);width:120px">${l}</span><strong>${v}</strong></div>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mu);margin-bottom:14px">
+        ${ic('check','var(--gr)',14)} Ảnh biên bản đã lưu lên hệ thống
+      </div>
+      <button class="btn btn-p btn-fw" onclick="setDriverStep('transit')" style="padding:11px">${ic('truck','#fff',14)} Bắt đầu vận chuyển →</button>
+    </div>`,
+  };
+  return stages[DS.pickupStage]||stages.arrive;
+}
+
+function renderDropoff(){
+  const stages={
+    arrive:`<div class="card" style="border:2px solid #06B6D4">
+      <div class="ct" style="color:#0891B2">📦 Bước 4 — Giao hàng & Ký nhận</div>
+      <div style="background:#F0FDFF;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">Điểm giao: Cty XNK Cần Thơ</div>
+        <div style="font-size:12px;color:var(--mu)">45 Nguyễn Trãi, Ninh Kiều, Cần Thơ</div>
+        <div style="font-size:12px;color:var(--mu);margin-top:3px">Người nhận: Chị Lan · 0912 345 678</div>
+      </div>
+      <div style="font-size:12px;color:var(--mu);margin-bottom:12px">
+        <div style="font-weight:700;color:var(--tx);margin-bottom:6px">POC — Proof of Chilled Delivery:</div>
+        ${['Người nhận kiểm tra chất lượng hàng','Tài xế chụp ảnh hàng hóa tại nơi giao','Chụp ảnh chữ ký biên bản','Quét OTP/QR Code xác nhận'].map((t,i)=>`<div style="display:flex;align-items:center;gap:7px;padding:4px 0"><div style="width:18px;height:18px;border-radius:50%;background:var(--pll);border:1.5px solid var(--p);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--p);flex-shrink:0">${i+1}</div><span>${t}</span></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm btn-fw" style="background:#F0FDFF;color:#0891B2;border:1.5px solid #67E8F9" onclick="notify('📷 Mở camera...','g')">📷 Chụp ảnh hàng</button>
+        <button class="btn btn-sm btn-fw" style="background:#F0FDFF;color:#0891B2;border:1.5px solid #67E8F9" onclick="notify('📷 Chụp chữ ký...','g')">✍️ Chữ ký</button>
+      </div>
+      <button class="btn btn-cy btn-fw" style="padding:12px" onclick="setDropoffStage('otp')">📦 Đã đến điểm trả</button>
+    </div>`,
+    otp:`<div class="card" style="border:2px solid var(--p)">
+      <div class="ct" style="color:var(--pd)">🔐 Xác nhận OTP từ người nhận</div>
+      <div style="background:var(--pll);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--mu);margin-bottom:8px">Người nhận đọc mã OTP từ app của họ</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px">
+          ${[0,1,2,3,4,5].map(i=>`<div id="otp-box-${i}" style="width:40px;height:48px;border:2px solid var(--bd);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--p);font-family:'JetBrains Mono',monospace;background:#fff">${DS.otpInput[i]||''}</div>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:200px;margin:0 auto">
+          ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>`<button onclick="otpKey('${n}')" style="padding:10px;border-radius:9px;border:1.5px solid var(--bd);background:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .1s" onmousedown="this.style.background='var(--pl)'" onmouseup="this.style.background='#fff'">${n}</button>`).join('')}
+        </div>
+      </div>
+      <button id="btn-confirm-otp" class="btn btn-p btn-fw" style="padding:12px;opacity:.5" disabled onclick="confirmOTP()">Xác nhận hoàn thành</button>
+    </div>`,
+    done:`<div class="card" style="border:2px solid var(--gr);background:linear-gradient(135deg,#F0FDF4,#fff);text-align:center;padding:28px 20px">
+      <div style="font-size:48px;margin-bottom:10px">✅</div>
+      <div style="font-size:18px;font-weight:800;color:var(--grd);margin-bottom:6px">Giao hàng thành công!</div>
+      <div style="font-size:13px;color:var(--mu);margin-bottom:18px">POC đã xác nhận · Cold Passport đang ghi blockchain</div>
+      <button class="btn btn-p btn-fw" onclick="setDriverStep('payout')" style="padding:12px">💰 Xem thanh toán →</button>
+    </div>`,
+  };
+  return stages[DS.dropoffStage]||stages.arrive;
+}
+
+function renderPayout(){
+  const base=2800000,extra=200000,commission=Math.round(base*.08);
+  const net=base+extra-commission;
+  return `<div class="card" style="border:2px solid #F59E0B;background:linear-gradient(135deg,#FFFBEB,#fff)">
+    <div style="text-align:center;padding:16px 0 12px">
+      <div style="font-size:40px;margin-bottom:8px">🎉</div>
+      <div style="font-size:18px;font-weight:800;color:#D97706;margin-bottom:4px">Đơn hàng hoàn thành xuất sắc!</div>
+      <div style="font-size:12px;color:var(--mu)">CM-001247 · 24/05/2026 · 16:48</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--bd2);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--mu2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Sao kê dòng tiền</div>
+      ${[['Cước vận chuyển gốc',fmt(base),false],['Phí bốc xếp',fmt(extra),false],['Hoa hồng LOGIFRESH (8%)','-'+fmt(commission),true]].map(([l,v,neg])=>`
+      <div class="hs" style="padding:6px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:${neg?'var(--re)':'var(--mu)'}">${l}</span><div class="sp"></div><span style="font-size:13px;font-weight:700;color:${neg?'var(--re)':'var(--tx)'}">${v}</span></div>`).join('')}
+      <div class="hs" style="padding:10px 0;margin-top:2px">
+        <span style="font-size:14px;font-weight:800">Thực nhận</span>
+        <div class="sp"></div>
+        <span style="font-size:22px;font-weight:900;color:var(--gr);letter-spacing:-.5px">${fmt(net)}</span>
+      </div>
+    </div>
+    <div style="background:#D1FAE5;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px">
+      <div style="font-weight:700;color:#065F46;margin-bottom:3px">✓ Tiền đã vào ví ngay lập tức</div>
+      <div style="color:var(--grd)">Số dư ví: <strong>${fmt(DS.wallet+net)}</strong></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-s btn-sm btn-fw" onclick="setDriverStep('transit');DS.tripStep='transit'">Về Dashboard</button>
+      <button class="btn btn-p btn-sm btn-fw" onclick="notify('💳 Rút tiền về tài khoản...','g')">Rút tiền ngay</button>
+    </div>
+  </div>`;
+}
+
+// Driver step controls
+function setDriverStep(step){
+  DS.tripStep=step;
+  DS.pickupStage='arrive';
+  DS.dropoffStage='arrive';
+  const panel=el('driver-step-panel');
+  if(panel) panel.innerHTML=renderDriverStep();
+  // Update step indicator
+  renderApp();
+}
+function setPickupStage(stage){
+  DS.pickupStage=stage;
+  const panel=el('driver-step-panel');
+  if(panel) panel.innerHTML=renderPickup();
+}
+function setDropoffStage(stage){
+  DS.dropoffStage=stage;
+  const panel=el('driver-step-panel');
+  if(panel) panel.innerHTML=renderDropoff();
+}
+
+// Online/Offline toggle
+function toggleOnline(){
+  DS.online=!DS.online;
+  const tog=el('online-toggle');
+  const lbl=el('online-label');
+  if(tog){tog.style.background=DS.online?'var(--p)':'#CBD5E1';tog.querySelector('div').style.left=DS.online?'23px':'3px';}
+  if(lbl){lbl.textContent=DS.online?'Online':'Offline';lbl.style.color=DS.online?'var(--p)':'var(--mu)';}
+  notify(DS.online?'✓ Bạn đang Online — hệ thống sẽ phân phối đơn hàng':'⏸ Bạn đang Offline',DS.online?'g':'');
+}
+
+// Incoming order popup
+function showIncomingOrder(){
+  const popup=el('incoming-popup');
+  if(!popup) return;
+  popup.style.display='flex';
+  DS.countdown=30;
+  const cdEl=el('cdnum')||el('countdown-circle');
+  if(cdEl) cdEl.textContent=30;
+  clearInterval(DS.countdownTm);
+  DS.countdownTm=setInterval(()=>{
+    DS.countdown--;
+    const e=el('cdnum')||el('countdown-circle');
+    if(e) e.textContent=DS.countdown;
+    if(DS.countdown<=0){clearInterval(DS.countdownTm);rejectOrder();}
+  },1000);
+}
+function rejectOrder(){
+  clearInterval(DS.countdownTm);
+  const popup=el('incoming-popup');
+  if(popup) popup.style.display='none';
+  notify('Đã từ chối đơn hàng','');
+}
+function acceptOrder(){
+  clearInterval(DS.countdownTm);
+  const popup=el('incoming-popup');
+  if(popup) popup.style.display='none';
+  notify('✓ Đã nhận đơn! Đến điểm đón ngay.','g');
+  DS.tripStep='pickup';DS.pickupStage='arrive';
+  const panel=el('driver-step-panel');
+  if(panel) panel.innerHTML=renderPickup();
+  renderApp();
+}
+
+// Temperature alert
+function triggerTempAlert(){
+  const overlay=el('alert-overlay');
+  if(overlay) overlay.style.display='block';
+}
+function dismissAlert(){
+  const overlay=el('alert-overlay');
+  if(overlay) overlay.style.display='none';
+  notify('✓ Đã tắt cảnh báo. Đang kiểm tra hệ thống lạnh...','');
+}
+
+// OTP input
+function otpKey(key){
+  if(key==='⌫'){DS.otpInput=DS.otpInput.slice(0,-1);}
+  else if(DS.otpInput.length<6&&key!==''){DS.otpInput+=key;}
+  // Update boxes
+  for(let i=0;i<6;i++){const b=el('otp-box-'+i);if(b)b.textContent=DS.otpInput[i]||'';}
+  const btn=el('btn-confirm-otp');
+  if(btn){btn.disabled=DS.otpInput.length<6;btn.style.opacity=DS.otpInput.length<6?'.5':'1';}
+}
+function confirmOTP(){
+  if(DS.otpInput.length<6) return;
+  if(DS.otpInput==='123456'||DS.otpInput.length===6){
+    setDropoffStage('done');
+    notify('✓ Xác nhận OTP thành công! Giao hàng hoàn tất.','g');
+    DS.wallet+=2800000; DS.todayEarned+=2800000;
+  } else {
+    notify('✗ OTP không đúng, thử lại!','r');
+    DS.otpInput='';
+    for(let i=0;i<6;i++){const b=el('otp-box-'+i);if(b)b.textContent='';}
+  }
+}
+
+// ── SHIPPER STATE ──
+let SS={
+  bookingType:'instant', // 'instant'|'schedule'
+  step:'form',           // 'form'|'scan'|'tier'|'mode'|'payment'|'tracking'|'nofound'|'success'
+  tier:null, mode:null, noFoundMode:null,
+  wallet:5200000,
+};
+
+// ── SHIPPER DASHBOARD ──
 function shipperDB(){
   return `<div class="page">
-    <div class="ph"><h1 class="pt">Đặt chuyến mới</h1><p class="ps">Tiến Phát Export · Điền thông tin để tìm xe phù hợp</p></div>
-    <div class="g2">
-      <div class="vs" id="booking-left">
-        <div class="card">
-          <div class="ct">${ic('truck','var(--p)')} Thông tin chuyến</div>
-          <div class="g2 mb10" style="gap:8px">
-            <div><label class="lbl">Từ</label><select class="sel" id="sfrom"><option>TP.HCM</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Cần Thơ</option><option>Bình Dương</option><option>Đà Lạt</option><option>Tiền Giang</option></select></div>
-            <div><label class="lbl">Đến</label><select class="sel" id="sto"><option>Cần Thơ</option><option>TP.HCM</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Hải Phòng</option><option>Bình Dương</option></select></div>
-          </div>
-          <div class="mb10"><label class="lbl">Loại hàng hóa</label>
-            <select class="sel" id="sgood" onchange="onGoodChange()">
-              ${Object.entries(GOODS).map(([k,v])=>`<option value="${k}">${k} · ${v.temp[0]}°→${v.temp[1]}°C · [${v.cat}]</option>`).join('')}
-            </select>
-          </div>
-          <div class="g2 mb10" style="gap:8px">
-            <div><label class="lbl">Khối lượng (tấn)</label><input type="number" class="inp" id="swt" value="2" min="0.1" max="30" step="0.1" oninput="onGoodChange()"/></div>
-            <div><label class="lbl">Ngày lấy hàng</label><input type="date" class="inp" id="sdate" value="${new Date().toISOString().split('T')[0]}"/></div>
-          </div>
-          <div id="goods-temp-info" style="background:var(--pl);border:1px solid var(--plight);border-radius:10px;padding:11px 14px;font-size:12px;color:var(--pd);margin-bottom:12px">
-            <strong>Nhiệt yêu cầu:</strong> -18°C đến -22°C (Tôm sú đông lạnh)
-          </div>
-          <!-- Quy cách & dịch vụ gia tăng -->
-          <div class="mb10"><label class="lbl">Quy cách đóng gói</label>
-            <select class="sel" id="spack">
-              <option value="loose">Hàng rời</option>
-              <option value="box">Hàng đóng thùng</option>
-              <option value="pallet">Nguyên Pallet</option>
-            </select>
-          </div>
-          <div class="mb12">
-            <label class="lbl">Dịch vụ gia tăng</label>
-            <div class="g3" style="gap:6px">
-              ${[['boc','🏋️ Bốc xếp'],['multi','📍 Giao nhiều điểm'],['ins','🛡️ Bảo hiểm']].map(([id,lbl])=>`
-              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:8px 10px;border:1.5px solid var(--bd);border-radius:8px;transition:border .15s;color:var(--mu)">
-                <input type="checkbox" id="svc-${id}" style="accent-color:var(--p)"> ${lbl}</label>`).join('')}
-            </div>
-          </div>
-          <button class="btn btn-p btn-fw" style="padding:12px;font-size:14px" onclick="startBookingSearch()">
-            ${ic('search','#fff',16)} Tìm xe phù hợp
-          </button>
-        </div>
-      </div>
-
-      <div class="vs" id="booking-right">
-        <!-- Placeholder -->
-        <div id="step-placeholder" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;text-align:center;gap:10px;border:2px dashed var(--bd)">
-          <div style="opacity:.15">${ic('truck','var(--mu)',52)}</div>
-          <div style="font-size:14px;font-weight:600;color:var(--mu)">Điền thông tin và nhấn Tìm xe</div>
-          <div style="font-size:12px;color:var(--mu2)">Hệ thống quét xe sẵn sàng trong bán kính 20km</div>
-        </div>
-
-        <!-- Scanning -->
-        <div id="step-scan" style="display:none">
-          <div class="scan-wrap">
-            <div class="scan-line"></div>
-            <div style="font-size:36px;margin-bottom:14px">🔍</div>
-            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;margin-bottom:7px">Đang quét hệ thống...</div>
-            <div id="scan-status" style="font-size:13px;color:rgba(99,255,200,.8);margin-bottom:18px">Kiểm tra xe sẵn sàng trong bán kính 20km</div>
-            <div style="display:flex;gap:5px;justify-content:center">
-              <div class="ldot"></div><div class="ldot"></div><div class="ldot"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step: Choose Tier -->
-        <div id="step-tier" style="display:none">
-          <div class="card" style="border:2px solid var(--p)">
-            <div class="hs mb14">
-              <span style="font-size:14px;font-weight:700;color:var(--pd)">Chọn gói dịch vụ</span>
-              <div class="sp"></div>
-              <span id="found-count-tier" style="font-size:12px;color:var(--mu)"></span>
-            </div>
-            <div class="g3 mb0" id="tier-cards" style="gap:10px">
-              ${renderTierCards()}
-            </div>
-            <button id="btn-next-tier" class="btn btn-p btn-fw mt14" style="padding:12px;font-size:14px;display:none" onclick="proceedToModeSelect()">
-              Tiếp theo: Chọn phương thức →
-            </button>
-          </div>
-        </div>
-
-        <!-- Step: Choose Mode -->
-        <div id="step-choose" style="display:none">
-          <div class="card" style="border:2px solid var(--p)">
-            <div class="hs mb12">
-              <button onclick="backToTier()" style="background:none;border:1.5px solid var(--bd);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--mu)">← Gói</button>
-              <span id="selected-tier-label" style="font-size:13px;font-weight:700;color:var(--pd);margin-left:6px"></span>
-              <div class="sp"></div>
-              <div style="width:7px;height:7px;border-radius:50%;background:var(--p)" class="pulse"></div>
-              <span id="found-count" style="font-size:12px;color:var(--mu)"></span>
-            </div>
-            <div class="g2 mb0" style="gap:10px">
-              <div class="mode-card" id="card-solo" onclick="selectBookMode('solo')">
-                <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
-                  <div style="width:38px;height:38px;border-radius:10px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">🚛</div>
-                  <div><div style="font-weight:800;font-size:14px">Đi Riêng</div><div style="font-size:11px;color:var(--mu)">Nhanh · Xe đến ngay</div></div>
-                </div>
-                <div class="mode-price" id="price-solo" style="color:#D97706;font-family:'Plus Jakarta Sans',sans-serif">—</div>
-                <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Bao xe · Không chờ</div>
-                ${[`✓ Xe đến ngay theo gói đã chọn`,`✓ Không ghép đơn khác`,`✓ Đi thẳng điểm nhận`].map(t=>`<div style="font-size:11px;color:var(--mu);margin-bottom:3px">${t}</div>`).join('')}
-              </div>
-              <div class="mode-card" id="card-share" onclick="selectBookMode('share')">
-                <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
-                  <div style="width:38px;height:38px;border-radius:10px;background:var(--pl);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">🔗</div>
-                  <div><div style="font-weight:800;font-size:14px">Đi Ghép</div><div style="font-size:11px;color:var(--p);font-weight:700">Giảm thêm 30-40%</div></div>
-                </div>
-                <div class="mode-price" id="price-share" style="color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">—</div>
-                <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Chờ tối đa +10 phút gom đơn</div>
-                ${[`✓ Tiết kiệm thêm 30–40%`,`✓ Nhiệt độ tương thích đảm bảo`,`✓ Đến đúng giờ (±10p)`].map(t=>`<div style="font-size:11px;color:var(--mu);margin-bottom:3px">${t}</div>`).join('')}
-              </div>
-            </div>
-            <button id="btn-confirm-book" class="btn btn-p btn-fw mt12" style="padding:12px;font-size:14px;display:none" onclick="confirmBooking()">
-              Xác nhận đặt chuyến →
-            </button>
-          </div>
-        </div>
-
-        <!-- No vehicle found -->
-        <div id="step-nofound" style="display:none">
-          <div class="scan-wrap" style="margin-bottom:10px">
-            <div class="scan-line"></div>
-            <div style="font-size:30px;margin-bottom:12px">⏳</div>
-            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;margin-bottom:6px">Không tìm thấy xe ngay</div>
-            <div style="font-size:13px;color:rgba(147,187,252,.8)">Đã quét 15 giây — không có xe trong bán kính 20km</div>
-          </div>
-          <div class="vs">
-            <div class="mode-card" id="nf-card-wait" onclick="selectNoFoundMode('wait')" style="background:#fff">
-              <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
-                <div style="width:38px;height:38px;border-radius:10px;background:var(--pl);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">⏰</div>
-                <div><div style="font-weight:800;font-size:14px">Lựa chọn 1 — Treo đơn chờ ghép</div><div style="font-size:11px;color:var(--p);font-weight:600">Ưu tiên GIÁ · Rẻ nhất</div></div>
-              </div>
-              <div id="nf-price-wait" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:var(--p);margin-bottom:7px">—</div>
-              <div style="font-size:12px;color:var(--mu);background:var(--pll);border-radius:8px;padding:10px 12px">Đơn giữ trên sàn <strong>5 phút</strong>. Khi có xe cùng hướng → ghép tự động, thông báo ngay.</div>
-            </div>
-            <div class="mode-card" id="nf-card-route" onclick="selectNoFoundMode('route')" style="background:#fff">
-              <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
-                <div style="width:38px;height:38px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">📍</div>
-                <div><div style="font-weight:800;font-size:14px">Lựa chọn 2 — Tuyến tối ưu</div><div style="font-size:11px;color:#06B6D4;font-weight:600">Ưu tiên THỜI GIAN · Có xe ngay</div></div>
-              </div>
-              <div id="nf-price-route" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:#0891B2;margin-bottom:7px">—</div>
-              <div style="font-size:12px;color:var(--mu);background:#F0FDFF;border-radius:8px;padding:10px 12px">Điều chỉnh điểm đón ra <strong>đầu đường lớn gần nhất (~100m)</strong> để tài xế vào được ngay.</div>
-            </div>
-            <button id="btn-nofound-confirm" class="btn btn-p btn-fw" style="padding:12px;font-size:14px;display:none" onclick="confirmNoFoundBooking()">Xác nhận →</button>
-          </div>
-        </div>
-
-        <!-- Success -->
-        <div id="step-success" style="display:none">
-          <div class="card" style="border:2px solid var(--p);background:var(--pl);text-align:center;padding:32px 22px">
-            <div style="font-size:48px;margin-bottom:14px">🎉</div>
-            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--pd);margin-bottom:8px">Đặt chuyến thành công!</div>
-            <div id="success-detail" style="font-size:13px;color:var(--p);margin-bottom:18px;line-height:1.7"></div>
-            <button class="btn btn-p btn-sm" onclick="setNav('orders')">Xem đơn hàng →</button>
-          </div>
+    <div class="ph">
+      <div class="hs">
+        <div><h1 class="pt">Đặt chuyến</h1><p class="ps">Tiến Phát Export</p></div>
+        <div class="sp"></div>
+        <!-- Instant / Schedule toggle -->
+        <div style="display:flex;gap:0;background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;padding:3px">
+          <button id="tab-instant" onclick="setBookingType('instant')" style="padding:7px 14px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:${SS.bookingType==='instant'?'var(--p)':'transparent'};color:${SS.bookingType==='instant'?'#fff':'var(--mu)'}">⚡ Đặt tức thì</button>
+          <button id="tab-schedule" onclick="setBookingType('schedule')" style="padding:7px 14px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;background:${SS.bookingType==='schedule'?'var(--p)':'transparent'};color:${SS.bookingType==='schedule'?'#fff':'var(--mu)'}">📅 Đặt lịch trước</button>
         </div>
       </div>
     </div>
 
-    <!-- Active order tracking -->
-    <div class="card mt14" style="border:2px solid var(--p);background:linear-gradient(135deg,var(--pll),#fff)">
-      <div class="ct" style="color:var(--pd)">${ic('truck','var(--p)')} Đơn đang vận chuyển</div>
-      <div class="hs mb6"><span class="mono" style="font-size:13px;font-weight:700;color:var(--pd)">CM-001247</span>${bd('● Đang chạy','p')}${bd('🚚 Tiêu chuẩn · Ghép đơn','b')}</div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:3px">TP.HCM → Cần Thơ · Tôm sú đông lạnh · 3.2T</div>
-      <div style="font-size:12px;color:var(--mu);margin-bottom:10px">Tài xế: Nguyễn Văn Hùng · ${stars(4.8)}</div>
-      <div class="prog mb6"><div class="prog-f" style="width:62%"></div></div>
-      <div class="hs mb12" style="font-size:11px;color:var(--mu)">
-        <span>62% · ETA 1h 15p</span><div class="sp"></div>
-        <span>Nhiệt: <strong id="mytemp" style="color:var(--pd)">-20.1°C</strong> ✓</span>
+    <!-- STEP INDICATOR -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;background:#fff;border:1px solid var(--bd2);border-radius:12px;padding:12px 16px">
+      ${[['form','📋','Thông tin'],['tier','🎯','Chọn gói'],['mode','🚚','Phương thức'],['payment','💳','Thanh toán'],['tracking','📡','Theo dõi']].map(([s,icon,lbl],i,arr)=>{
+        const order=['form','tier','mode','payment','tracking','nofound','success'];
+        const cur=order.indexOf(SS.step); const si=order.indexOf(s);
+        const done=si<cur, active=si===cur||((SS.step==='scan'||SS.step==='nofound'||SS.step==='success')&&s==='mode');
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative">
+          ${i>0?`<div style="position:absolute;top:13px;left:-50%;right:50%;height:2px;background:${done?'var(--p)':'var(--bd2)'}"></div>`:''}
+          <div style="width:26px;height:26px;border-radius:50%;background:${done?'var(--p)':active?'var(--p)':'var(--bd2)'};display:flex;align-items:center;justify-content:center;font-size:${done?'10px':'12px'};position:relative;z-index:1;box-shadow:${active?'0 0 0 3px rgba(29,107,243,.2)':'none'}">${done?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>':icon}</div>
+          <div style="font-size:9px;font-weight:${active?'700':'500'};color:${active?'var(--p)':'var(--mu2)'};white-space:nowrap">${lbl}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="g2">
+      <!-- LEFT: booking form (always visible at step=form) -->
+      <div class="vs">
+        ${SS.step==='form'?renderShipperForm():renderShipperFormCollapsed()}
       </div>
-      <div class="g2" style="gap:7px">
-        <button class="btn btn-o btn-sm btn-fw" onclick="setNav('map')">${ic('map','var(--p)')} Bản đồ</button>
-        <button class="btn btn-s btn-sm btn-fw" onclick="callDriver()">${ic('phone','var(--mu)')} Gọi tài xế</button>
+
+      <!-- RIGHT: dynamic step panel -->
+      <div class="vs" id="shipper-right">
+        ${renderShipperRight()}
       </div>
+    </div>
+
+    <!-- ACTIVE ORDER (shown after booking) -->
+    ${SS.step==='tracking'||SS.step==='success'?renderShipperTracking():''}
+  </div>`;
+}
+
+function renderShipperFormCollapsed(){
+  return `<div class="card" style="cursor:pointer;border:1.5px solid var(--bd2)" onclick="SS.step='form';refreshShipperPage()">
+    <div class="hs">
+      <div>
+        <div style="font-size:13px;font-weight:700">TP.HCM → Cần Thơ · Tôm sú 2T</div>
+        <div style="font-size:11px;color:var(--mu)">-18°C → -22°C · Nguyên Pallet · 24/05/2026</div>
+      </div>
+      <div class="sp"></div>
+      <span style="font-size:12px;color:var(--p);font-weight:600">Sửa ✏️</span>
     </div>
   </div>`;
-  onGoodChange();
 }
 
-function renderTierCards(){
-  return Object.entries(TIERS).map(([key,t])=>`
-    <div class="tier-card tier-${key}" id="tier-${key}" onclick="selectTier('${key}')">
-      ${key==='std'?`<div class="tier-rec" style="background:var(--p);color:#fff">⭐ Phổ biến</div>`:''}
-      <div style="font-size:24px;margin-bottom:8px;line-height:1">${t.icon}</div>
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:14px;color:var(--tx);margin-bottom:2px;white-space:nowrap">${t.label}</div>
-      <div style="font-size:11px;color:${t.color};font-weight:700;margin-bottom:2px">${t.eta}</div>
-      <div class="tier-price" id="tier-price-${key}" style="color:${t.color}">—</div>
-      <div style="font-size:11px;color:var(--mu);margin-bottom:8px;line-height:1.5">${t.desc}</div>
-      <div class="tier-features">
-        ${t.features.map(f=>`<div class="tier-feat-item">${ic('check',t.color,11)} <span>${f}</span></div>`).join('')}
+function renderShipperForm(){
+  return `<div class="card">
+    <div class="ct">${ic('truck','var(--p)')} Thông tin chuyến</div>
+
+    <!-- Route -->
+    <div class="g2 mb10" style="gap:8px">
+      <div><label class="lbl">Điểm đi</label><select class="sel" id="sfrom"><option>TP.HCM</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Cần Thơ</option><option>Bình Dương</option><option>Đà Lạt</option><option>Tiền Giang</option></select></div>
+      <div><label class="lbl">Điểm đến</label><select class="sel" id="sto"><option>Cần Thơ</option><option>TP.HCM</option><option>Hà Nội</option><option>Đà Nẵng</option><option>Hải Phòng</option><option>Bình Dương</option></select></div>
+    </div>
+
+    <!-- Time -->
+    <div class="g2 mb10" style="gap:8px">
+      <div><label class="lbl">Ngày lấy hàng</label><input type="date" class="inp" id="sdate" value="${new Date().toISOString().split('T')[0]}"/></div>
+      <div><label class="lbl">Giờ lấy hàng</label><input type="time" class="inp" id="stime" value="08:00"/></div>
+    </div>
+
+    <!-- Goods category + name -->
+    <div class="g2 mb8" style="gap:8px">
+      <div><label class="lbl">Loại hàng</label>
+        <select class="sel" id="scat" onchange="onCatChange()">
+          <option value="">-- Chọn loại --</option>
+          <option>Thủy sản</option><option>Nông sản</option><option>Gia súc</option><option>Sữa & Chế biến</option><option>Nước uống</option>
+        </select>
       </div>
-    </div>`).join('');
+      <div><label class="lbl">Tên hàng</label>
+        <select class="sel" id="sgood" onchange="onGoodChange()">
+          ${Object.entries(GOODS).map(([k,v])=>`<option value="${k}">${k}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- Temperature (auto-suggest, user can adjust) -->
+    <div id="goods-temp-info" style="background:var(--pl);border:1px solid var(--plight);border-radius:10px;padding:11px 14px;font-size:12px;color:var(--pd);margin-bottom:10px">
+      <div class="hs mb6"><span style="font-weight:700">🌡️ Nhiệt độ yêu cầu (đề xuất)</span><div class="sp"></div><span style="font-size:10px;color:var(--mu)">Có thể điều chỉnh</span></div>
+      <div class="g2" style="gap:6px">
+        <div><label class="lbl" style="color:var(--pd)">Từ °C</label><input type="number" class="inp" id="stemp-lo" value="-22" step="1" style="font-family:'JetBrains Mono',monospace"/></div>
+        <div><label class="lbl" style="color:var(--pd)">Đến °C</label><input type="number" class="inp" id="stemp-hi" value="-18" step="1" style="font-family:'JetBrains Mono',monospace"/></div>
+      </div>
+    </div>
+
+    <!-- Weight -->
+    <div class="mb10"><label class="lbl">Khối lượng (Tấn)</label>
+      <input type="number" class="inp" id="swt" value="2" min="0.1" max="30" step="0.1" oninput="onGoodChange()"/>
+    </div>
+
+    <!-- Special properties -->
+    <div class="mb10"><label class="lbl">Đặc tính sản phẩm</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${[['odor','🌿 Dễ ám mùi'],['deepfreeze','❄️ Cần cấp đông sâu'],['live','🐟 Hàng tươi sống'],['fragile','📦 Dễ vỡ/dập'],['hazmat','⚠️ Yêu cầu HACCP'],['halal','☪️ Halal certified']].map(([id,lbl])=>`
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:7px 10px;border:1.5px solid var(--bd);border-radius:8px;transition:border .15s;color:var(--mu)" onmouseover="this.style.borderColor='var(--p)'" onmouseout="if(!this.querySelector('input').checked)this.style.borderColor='var(--bd)'">
+          <input type="checkbox" id="prop-${id}" style="accent-color:var(--p)"> ${lbl}</label>`).join('')}
+      </div>
+    </div>
+
+    <!-- Packaging + extras -->
+    <div class="mb10"><label class="lbl">Quy cách đóng gói</label>
+      <select class="sel" id="spack">
+        <option value="pallet">🎁 Nguyên Pallet</option>
+        <option value="box">📦 Hàng đóng thùng</option>
+        <option value="loose">🪣 Hàng rời</option>
+      </select>
+    </div>
+    <div class="mb12"><label class="lbl">Dịch vụ gia tăng</label>
+      <div class="g3" style="gap:6px">
+        ${[['boc','🏋️ Bốc xếp'],['multi','📍 Nhiều điểm'],['ins','🛡️ Bảo hiểm']].map(([id,lbl])=>`
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:8px 10px;border:1.5px solid var(--bd);border-radius:8px;color:var(--mu)">
+          <input type="checkbox" id="svc-${id}" style="accent-color:var(--p)"> ${lbl}</label>`).join('')}
+      </div>
+    </div>
+
+    <!-- Map preview -->
+    <div style="background:linear-gradient(135deg,#EBF2FF,#F0FDFF);border:1px solid var(--bd2);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px">
+      <div class="hs mb6"><span style="font-weight:700;color:var(--pd)">${ic('map','var(--p)',13)} Lộ trình dự kiến</span><div class="sp"></div><span style="color:var(--mu)">~180 km · 3h 20p</span></div>
+      <div style="height:80px;background:#fff;border-radius:8px;border:1px solid var(--bd2);display:flex;align-items:center;justify-content:center;color:var(--mu);font-size:12px;position:relative;overflow:hidden">
+        <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--p)"></div>
+        <div style="position:absolute;left:12px;top:calc(50% - 5px);right:12px;height:2px;background:linear-gradient(90deg,var(--p),var(--cy));margin-top:5px;border-radius:2px;"></div>
+        <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--cy)"></div>
+        <span>TP.HCM → Cần Thơ</span>
+      </div>
+    </div>
+
+    <button class="btn btn-p btn-fw" style="padding:12px;font-size:14px" onclick="startShipperSearch()">
+      ${ic('search','#fff',16)} Tìm xe phù hợp →
+    </button>
+  </div>`;
 }
 
-let _bookTier=null,_bookMode=null;
-function selectTier(key){
-  _bookTier=key;
-  $$('.tier-card').forEach(c=>c.classList.remove('selected','selected-hot','selected-std','selected-eco'));
-  el('tier-'+key)?.classList.add('selected','selected-'+key);
-  el('btn-next-tier').style.display='flex';
+function renderShipperRight(){
+  if(SS.step==='form') return `<div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;text-align:center;gap:10px;border:2px dashed var(--bd)">
+    <div style="opacity:.15">${ic('truck','var(--mu)',52)}</div>
+    <div style="font-size:14px;font-weight:600;color:var(--mu)">Điền thông tin và nhấn Tìm xe</div>
+    <div style="font-size:12px;color:var(--mu2)">Hệ thống quét xe trong bán kính 20km</div>
+  </div>`;
+
+  if(SS.step==='scan') return `<div class="scan-wrap">
+    <div class="scan-line"></div>
+    <div style="font-size:36px;margin-bottom:14px">🔍</div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:7px">Đang quét hệ thống...</div>
+    <div id="scan-status" style="font-size:13px;color:rgba(99,255,200,.8);margin-bottom:18px">Kiểm tra xe trong bán kính 20km</div>
+    <div style="display:flex;gap:5px;justify-content:center"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div>
+  </div>`;
+
+  if(SS.step==='tier') return renderTierStep();
+  if(SS.step==='mode') return renderModeStep();
+  if(SS.step==='payment') return renderPaymentStep();
+  if(SS.step==='nofound') return renderNoFoundStep();
+  if(SS.step==='success') return renderSuccessStep();
+  return '';
 }
 
-function proceedToModeSelect(){
-  if(!_bookTier) return;
-  const t=TIERS[_bookTier];
-  el('step-tier').style.display='none';
-  el('step-choose').style.display='block';
+function renderTierStep(){
   const w=parseFloat(el('swt')?.value||2);
+  const base=w*820000;
+  return `<div class="card" style="border:2px solid var(--p)">
+    <div class="hs mb14">
+      <div style="font-size:14px;font-weight:800;color:var(--pd)">Chọn gói dịch vụ</div>
+      <div class="sp"></div>
+      <span style="font-size:12px;color:var(--mu)">3 xe phù hợp</span>
+    </div>
+    <div class="g3 mb0" style="gap:8px">
+      ${Object.entries(TIERS).map(([key,t])=>`
+      <div class="tier-card tier-${key}" id="tier-${key}" onclick="selectShipperTier('${key}')">
+        ${key==='std'?`<div class="tier-rec" style="background:var(--p);color:#fff">⭐</div>`:''}
+        <div style="font-size:22px;margin-bottom:6px;line-height:1">${t.icon}</div>
+        <div style="font-weight:800;font-size:13px;color:var(--tx);margin-bottom:1px;white-space:nowrap">${t.label}</div>
+        <div style="font-size:10px;color:${t.color};font-weight:700;margin-bottom:4px">${t.eta}</div>
+        <div style="font-size:18px;font-weight:800;color:${t.color};letter-spacing:-.5px;margin-bottom:4px;white-space:nowrap">${fmt(Math.round(base*t.mult))}</div>
+        <div style="font-size:10px;color:var(--mu);line-height:1.5">${t.desc}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderModeStep(){
+  const w=parseFloat(el('swt')?.value||2)||2;
+  const t=TIERS[SS.tier]||TIERS.std;
   const base=w*820000;
   const solo=Math.round(base*t.mult);
   const share=Math.round(base*t.mult*0.65);
-  el('selected-tier-label').textContent=t.icon+' Gói '+t.label;
-  el('price-solo').textContent=fmt(solo);
-  el('price-share').textContent=fmt(share);
+  return `<div class="card" style="border:2px solid var(--p)">
+    <div class="hs mb12">
+      <button onclick="SS.step='tier';refreshShipperRight()" style="background:none;border:1.5px solid var(--bd);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--mu)">← Gói</button>
+      <span style="font-size:13px;font-weight:700;color:var(--pd);margin-left:6px">${t.icon} Gói ${t.label}</span>
+      <div class="sp"></div>
+      <span style="font-size:11px;color:var(--mu)">3 xe phù hợp</span>
+    </div>
+    <div class="g2 mb12" style="gap:10px">
+      <div class="mode-card" id="card-solo" onclick="selectShipperMode('solo')">
+        <div style="font-size:22px;margin-bottom:8px">🚛</div>
+        <div style="font-weight:800;font-size:14px;margin-bottom:2px">Đi Riêng</div>
+        <div style="font-size:11px;color:var(--mu);margin-bottom:8px">Nhanh · Không chờ</div>
+        <div style="font-size:22px;font-weight:800;color:#D97706;letter-spacing:-.5px">${fmt(solo)}</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:4px">ETA ${t.eta}</div>
+      </div>
+      <div class="mode-card" id="card-share" onclick="selectShipperMode('share')">
+        <div style="font-size:22px;margin-bottom:8px">🔗</div>
+        <div style="font-weight:800;font-size:14px;margin-bottom:2px">Đi Ghép</div>
+        <div style="font-size:11px;color:var(--p);font-weight:700;margin-bottom:8px">Giảm 30-40%</div>
+        <div style="font-size:22px;font-weight:800;color:var(--p);letter-spacing:-.5px">${fmt(share)}</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:4px">Chờ tối đa +10p</div>
+      </div>
+    </div>
+    <button id="btn-go-payment" class="btn btn-p btn-fw" style="padding:12px;display:none" onclick="SS.step='payment';refreshShipperRight()">Tiếp theo: Thanh toán →</button>
+  </div>`;
 }
 
-function backToTier(){
-  _bookMode=null;
-  el('step-choose').style.display='none';
-  el('step-tier').style.display='block';
+function renderPaymentStep(){
+  const w=parseFloat(el('swt')?.value||2)||2;
+  const t=TIERS[SS.tier]||TIERS.std;
+  const base=w*820000;
+  const mult=SS.mode==='share'?t.mult*0.65:t.mult;
+  const price=Math.round(base*mult);
+  const insurance=el('svc-ins')?.checked?Math.round(price*.02):0;
+  const loading=el('svc-boc')?.checked?200000:0;
+  const total=price+insurance+loading;
+  const driver=DRIVERS[0];
+
+  return `<div class="vs">
+    <div class="card" style="border:2px solid var(--p)">
+      <div class="hs mb12">
+        <button onclick="SS.step='mode';refreshShipperRight()" style="background:none;border:1.5px solid var(--bd);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--mu)">← Phương thức</button>
+        <span style="font-size:13px;font-weight:700;color:var(--pd);margin-left:6px">💳 Thanh toán</span>
+      </div>
+
+      <!-- Driver info -->
+      <div style="background:var(--pll);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--mu2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Tài xế được phân công</div>
+        <div class="hs mb8">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0">${driver.name.charAt(0)}</div>
+          <div>
+            <div style="font-weight:800;font-size:14px">${driver.name}</div>
+            <div class="hs" style="gap:4px;margin-top:2px">
+              ${stars(driver.score)}
+              <span style="font-size:11px;color:var(--mu)">(${driver.trips} chuyến)</span>
+              ${bd('🏆 Tài xế Vàng','a')}
+            </div>
+          </div>
+          <div class="sp"></div>
+          <button onclick="callDriver()" style="background:var(--p);border:none;border-radius:9px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;color:#fff;font-size:12px;font-weight:600">${ic('phone','#fff',13)} Gọi</button>
+        </div>
+        <div class="g2" style="gap:6px;font-size:12px">
+          ${[['Biển số',driver.plate],['Loại xe','Xe 5T · Thùng lạnh'],['Nhiệt tốt nhất','-25°C → +5°C'],['ETA đến kho','~25 phút']].map(([l,v])=>`
+          <div style="background:#fff;border-radius:8px;padding:7px 10px;border:1px solid var(--bd2)"><div style="font-size:10px;color:var(--mu2)">${l}</div><div style="font-weight:700;margin-top:1px">${v}</div></div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Price breakdown -->
+      <div style="border:1px solid var(--bd2);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--mu2);text-transform:uppercase;margin-bottom:9px">Chi tiết giá</div>
+        ${[['Cước vận chuyển',fmt(price)],loading?['Phí bốc xếp',fmt(loading)]:null,insurance?['Phí bảo hiểm',fmt(insurance)]:null].filter(Boolean).map(([l,v])=>`
+        <div class="hs" style="padding:5px 0;border-bottom:1px solid var(--bd2);font-size:12px"><span style="color:var(--mu)">${l}</span><div class="sp"></div><span style="font-weight:600">${v}</span></div>`).join('')}
+        <div class="hs" style="padding:8px 0;font-size:14px;font-weight:800"><span>Tổng thanh toán</span><div class="sp"></div><span style="color:var(--p)">${fmt(total)}</span></div>
+      </div>
+
+      <!-- Wallet -->
+      <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px">Chọn phương thức thanh toán</div>
+      <div class="vs" style="gap:7px;margin-bottom:14px">
+        ${[['wallet','💳 Ví LOGIFRESH',`Số dư: ${fmt(SS.wallet)}`,SS.wallet>=total],['transfer','🏦 Chuyển khoản','VietQR · Tức thì',true],['cod','💵 Công nợ (doanh nghiệp)','Thanh toán trong 30 ngày',true]].map(([id,lbl,sub,ok])=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid var(--bd);border-radius:10px;cursor:pointer;transition:all .15s" onclick="this.parentElement.querySelectorAll('label').forEach(l=>l.style.borderColor='var(--bd)');this.style.borderColor='var(--p)';this.style.background='var(--pll)'">
+          <input type="radio" name="pay-method" value="${id}" style="accent-color:var(--p)">
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">${lbl}</div><div style="font-size:11px;color:${ok?'var(--mu)':'var(--re)'}">${sub}</div></div>
+          ${!ok?`<span style="font-size:10px;color:var(--re);font-weight:700">Không đủ số dư</span>`:''}
+        </label>`).join('')}
+      </div>
+      <button class="btn btn-p btn-fw" style="padding:13px;font-size:14px" onclick="confirmShipperBooking()">
+        🔒 Xác nhận & Thanh toán ${fmt(total)} →
+      </button>
+    </div>
+  </div>`;
 }
 
-function selectBookMode(mode){
-  _bookMode=mode;
-  el('card-solo').classList.remove('selected','selected-now');
-  el('card-share').classList.remove('selected');
-  if(mode==='solo') el('card-solo').classList.add('selected-now');
-  else el('card-share').classList.add('selected');
-  el('btn-confirm-book').style.display='flex';
+function renderNoFoundStep(){
+  const w=parseFloat(el('swt')?.value||2)||2;
+  const base=w*820000;
+  return `<div class="vs">
+    <div class="scan-wrap" style="margin-bottom:10px">
+      <div class="scan-line"></div>
+      <div style="font-size:30px;margin-bottom:12px">⏳</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:6px">Không tìm thấy xe ngay</div>
+      <div style="font-size:13px;color:rgba(147,187,252,.8)">Đã quét 15 giây — không có xe trong bán kính 20km</div>
+    </div>
+    <div class="vs" style="gap:8px">
+      <div class="mode-card" id="nf-wait" onclick="selectNoFound('wait')" style="background:#fff">
+        <div class="hs mb8">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--pl);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⏰</div>
+          <div><div style="font-weight:800">Lựa chọn 1 — Treo đơn chờ ghép</div><div style="font-size:11px;color:var(--p);font-weight:600">Ưu tiên GIÁ · Rẻ nhất</div></div>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:var(--p);margin-bottom:6px">${fmt(Math.round(base*0.65))}</div>
+        <div style="font-size:12px;color:var(--mu);background:var(--pll);border-radius:8px;padding:9px 11px">Đơn giữ <strong>5 phút</strong> · Khi có xe → ghép tự động</div>
+      </div>
+      <div class="mode-card" id="nf-route" onclick="selectNoFound('route')" style="background:#fff">
+        <div class="hs mb8">
+          <div style="width:36px;height:36px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📍</div>
+          <div><div style="font-weight:800">Lựa chọn 2 — Tuyến tối ưu</div><div style="font-size:11px;color:#06B6D4;font-weight:600">Ưu tiên THỜI GIAN · Có xe ngay</div></div>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:#0891B2;margin-bottom:6px">${fmt(Math.round(base*0.82))}</div>
+        <div style="font-size:12px;color:var(--mu);background:#F0FDFF;border-radius:8px;padding:9px 11px">Điểm đón điều chỉnh ra đầu đường lớn <strong>~100m</strong></div>
+      </div>
+      <button id="btn-nofound-go" class="btn btn-p btn-fw" style="padding:12px;display:none" onclick="SS.step='payment';refreshShipperRight()">Tiếp theo: Thanh toán →</button>
+    </div>
+  </div>`;
 }
 
-let _noFoundMode=null;
-function selectNoFoundMode(mode){
-  _noFoundMode=mode;
-  $$('#nf-card-wait,#nf-card-route').forEach(c=>c.classList.remove('selected'));
-  el('nf-card-'+mode)?.classList.add('selected');
-  el('btn-nofound-confirm').style.display='flex';
+function renderSuccessStep(){
+  return `<div class="card" style="border:2px solid var(--p);background:var(--pl);text-align:center;padding:32px 22px">
+    <div style="font-size:48px;margin-bottom:14px">🎉</div>
+    <div style="font-size:20px;font-weight:800;color:var(--pd);margin-bottom:8px">Đặt chuyến thành công!</div>
+    <div id="success-detail" style="font-size:13px;color:var(--p);margin-bottom:18px;line-height:1.7">Xe đang trên đường đến — ETA ~25 phút</div>
+    <button class="btn btn-p btn-sm" onclick="SS.step='tracking';refreshShipperPage()">📡 Theo dõi hành trình →</button>
+  </div>`;
+}
+
+function renderShipperTracking(){
+  const trip=TRIPS[0];
+  const temps=[-20.3,-20.1,-19.8,-20.2,-20.5,-20.1,-19.9,-20.3,-20.1,-20.0];
+  return `<div class="card mt14" style="border:2px solid var(--p);background:linear-gradient(135deg,var(--pll),#fff)">
+    <div class="hs mb10">
+      <div>
+        <div class="hs mb4"><span class="mono" style="font-size:13px;font-weight:700;color:var(--pd)">CM-001247</span>${bd('● Đang chạy','p')}${bd('🚚 Tiêu chuẩn · Ghép','b')}</div>
+        <div style="font-size:13px;font-weight:600">TP.HCM → Cần Thơ · Tôm sú đông lạnh · 3.2T</div>
+      </div>
+      <div class="sp"></div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--mu)">Nhiệt độ</div>
+        <div id="mytemp" style="font-size:22px;font-weight:800;color:var(--p);letter-spacing:-.5px">${trip.tempNow}°C</div>
+        <div style="font-size:10px;color:var(--gr);font-weight:600">✓ An toàn</div>
+      </div>
+    </div>
+    <div class="prog mb6"><div class="prog-f" style="width:62%"></div></div>
+    <div class="hs mb10" style="font-size:11px;color:var(--mu)"><span>62% · ETA 1h 15p</span><div class="sp"></div><span>Tài xế: Nguyễn Văn Hùng · ${stars(4.8)}</span></div>
+    <div style="margin-bottom:12px">${spark(temps,trip.lo,trip.hi,560,40)}</div>
+    <!-- IoT alert setting -->
+    <div style="background:var(--bg);border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:12px">
+      <div class="hs"><span style="font-weight:600">${ic('thermo','var(--p)',13)} Cảnh báo nhiệt tự động</span><div class="sp"></div>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" checked style="accent-color:var(--p)"> <span style="color:var(--gr);font-weight:600">Đang bật</span></label>
+      </div>
+      <div style="color:var(--mu);margin-top:3px">Sẽ thông báo ngay nếu nhiệt vượt ngưỡng -18°C</div>
+    </div>
+    <div class="g3" style="gap:7px">
+      <button class="btn btn-o btn-sm btn-fw" onclick="setNav('map')">${ic('map','var(--p)')} Bản đồ</button>
+      <button class="btn btn-s btn-sm btn-fw" onclick="callDriver()">${ic('phone','var(--mu)')} Gọi tài xế</button>
+      <button class="btn btn-s btn-sm btn-fw" onclick="setNav('passport')">${ic('shield','var(--mu)')} Passport</button>
+    </div>
+  </div>`;
+}
+
+// Shipper state controls
+function setBookingType(t){
+  SS.bookingType=t;
+  refreshShipperPage();
+}
+function refreshShipperPage(){
+  const pc=el('pc');if(pc) pc.innerHTML=shipperDB();
+  onGoodChange();
+}
+function refreshShipperRight(){
+  const r=el('shipper-right');
+  if(r) r.innerHTML=renderShipperRight();
+}
+
+function selectShipperTier(key){
+  SS.tier=key;
+  $$('.tier-card').forEach(c=>c.classList.remove('selected','selected-hot','selected-std','selected-eco'));
+  el('tier-'+key)?.classList.add('selected','selected-'+key);
+  SS.step='mode';
+  refreshShipperRight();
+}
+function selectShipperMode(mode){
+  SS.mode=mode;
+  el('card-solo')?.classList.remove('selected','selected-now');
+  el('card-share')?.classList.remove('selected');
+  if(mode==='solo') el('card-solo')?.classList.add('selected-now');
+  else el('card-share')?.classList.add('selected');
+  const btn=el('btn-go-payment');
+  if(btn) btn.style.display='flex';
+}
+function selectNoFound(mode){
+  SS.noFoundMode=mode;
+  el('nf-wait')?.classList.remove('selected');
+  el('nf-route')?.classList.remove('selected');
+  el('nf-'+mode)?.classList.add('selected');
+  const btn=el('btn-nofound-go');
+  if(btn) btn.style.display='flex';
+}
+
+function startShipperSearch(){
+  const g=el('sgood')?.value;
+  const w=parseFloat(el('swt')?.value||2);
+  if(!g){notify('Vui lòng chọn loại hàng!','r');return;}
+  SS.step='scan';
+  refreshShipperRight();
+  const statuses=['Kiểm tra xe trong bán kính 20km...','Xác minh nhiệt độ tương thích...','Kiểm tra tải trọng còn lại...','Tính giá tối ưu...'];
+  let si=0;
+  const scanTm=setInterval(()=>{si++;const e=el('scan-status');if(e&&si<statuses.length)e.textContent=statuses[si];},900);
+  const gd=GOODS[g];
+  const compat=VEHICLES.filter(v=>{
+    if(v.status==='alert'||v.cap-v.usedCap<w) return false;
+    const vg=GOODS[v.goods];return vg&&tempCompat(vg.temp,gd.temp);
+  });
+  setTimeout(()=>{
+    clearInterval(scanTm);
+    SS.step=compat.length>0?'tier':'nofound';
+    refreshShipperRight();
+  },4200);
+}
+
+function confirmShipperBooking(){
+  SS.step='success';
+  refreshShipperRight();
+  notify('✓ Đặt chuyến thành công! Xe đang đến...','g');
+}
+
+function onCatChange(){
+  const cat=el('scat')?.value;
+  const sel=el('sgood');
+  if(!sel||!cat) return;
+  sel.innerHTML=Object.entries(GOODS).filter(([k,v])=>!cat||v.cat.includes(cat)||cat==='').map(([k,v])=>`<option value="${k}">${k}</option>`).join('');
+  onGoodChange();
 }
 
 function onGoodChange(){
   const g=el('sgood')?.value;
   const w=parseFloat(el('swt')?.value||2);
   const info=el('goods-temp-info');
-  if(!g||!info) return;
+  const loEl=el('stemp-lo'),hiEl=el('stemp-hi');
+  if(!g) return;
   const gd=GOODS[g];
-  if(gd) info.innerHTML=`<strong>Nhiệt yêu cầu:</strong> ${gd.temp[0]}°C → ${gd.temp[1]}°C · ${gd.cat} · ${gd.note}`;
-  // Update tier prices
+  if(gd){
+    if(info) info.innerHTML=`<div class="hs mb6"><span style="font-weight:700">🌡️ Nhiệt độ yêu cầu (đề xuất)</span><div class="sp"></div><span style="font-size:10px;color:var(--mu)">Có thể điều chỉnh</span></div><div class="g2" style="gap:6px"><div><label class="lbl" style="color:var(--pd)">Từ °C</label><input type="number" class="inp" id="stemp-lo" value="${gd.temp[0]}" step="1" style="font-family:'JetBrains Mono',monospace"/></div><div><label class="lbl" style="color:var(--pd)">Đến °C</label><input type="number" class="inp" id="stemp-hi" value="${gd.temp[1]}" step="1" style="font-family:'JetBrains Mono',monospace"/></div></div><div style="font-size:11px;color:var(--mu);margin-top:6px">${gd.cat} · ${gd.note}</div>`;
+  }
   const base=w*820000;
-  Object.entries(TIERS).forEach(([key,t])=>{
-    const el2=el('tier-price-'+key);
-    if(el2) el2.textContent=fmt(Math.round(base*t.mult));
-  });
+  Object.entries(TIERS).forEach(([key,t])=>{const e=el('tier-price-'+key);if(e)e.textContent=fmt(Math.round(base*t.mult));});
 }
 
-function startBookingSearch(){
-  const g=el('sgood')?.value;
-  const w=parseFloat(el('swt')?.value||2);
-  if(!g){notify('Vui lòng chọn loại hàng!','r');return;}
-  _bookTier=null;_bookMode=null;
-  el('step-placeholder').style.display='none';
-  el('step-scan').style.display='block';
-  el('step-tier').style.display='none';
-  el('step-choose').style.display='none';
-  el('step-nofound').style.display='none';
-  el('step-success').style.display='none';
-  const statuses=['Kiểm tra xe sẵn sàng trong bán kính 20km...','Xác minh nhiệt độ tương thích...','Kiểm tra tải trọng còn lại...','Đang tính giá tối ưu...'];
-  let si=0;
-  const statusEl=el('scan-status');
-  const scanTm=setInterval(()=>{si++;if(statusEl&&si<statuses.length)statusEl.textContent=statuses[si];},900);
-  const gd=GOODS[g];
-  const compatVehicles=VEHICLES.filter(v=>{
-    if(v.status==='alert') return false;
-    if(v.cap-v.usedCap<w) return false;
-    const vg=GOODS[v.goods];
-    return vg&&tempCompat(vg.temp,gd.temp);
-  });
-  setTimeout(()=>{
-    clearInterval(scanTm);
-    el('step-scan').style.display='none';
-    const base=w*820000;
-    if(compatVehicles.length>0){
-      el('step-tier').style.display='block';
-      el('found-count-tier').textContent=compatVehicles.length+' xe phù hợp';
-      onGoodChange(); // update prices in tier cards
-    } else {
-      el('step-nofound').style.display='block';
-      el('nf-price-wait').textContent=fmt(Math.round(base*0.65));
-      el('nf-price-route').textContent=fmt(Math.round(base*0.82));
-    }
-  },4200);
-}
-
-function confirmBooking(){
-  const mode=_bookMode,t=TIERS[_bookTier];
-  el('step-choose').style.display='none';
-  el('step-success').style.display='block';
-  el('success-detail').textContent=`Gói ${t?.label} · ${mode==='solo'?'Đi riêng — xe đến trong '+t?.eta:('Đi ghép — tiết kiệm thêm 30-40% · '+t?.eta)}`;
-  notify('✓ Đặt chuyến thành công!','g');
-}
-function confirmNoFoundBooking(){
-  el('step-nofound').style.display='none';
-  el('step-success').style.display='block';
-  el('success-detail').textContent=_noFoundMode==='wait'?'Đơn đã được treo trên sàn — hệ thống đang tìm xe ghép (tối đa 5 phút)...':'Điểm đón tối ưu, xe đến trong khoảng 20 phút!';
-  notify('✓ Đã gửi yêu cầu!','g');
-}
 function callDriver(){notify('📞 Đang gọi tài xế Nguyễn Văn Hùng (0901234567)...','g');}
 
 // ── ADMIN DASHBOARD ──
