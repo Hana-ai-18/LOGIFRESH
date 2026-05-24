@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title>LOGIFRESH — Vận tải lạnh thông minh</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -79,7 +79,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 /* Sidebar parts */
 .sbl{padding:20px 18px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1)}
 .sbl-mark{width:34px;height:34px;background:var(--p);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px rgba(29,107,243,.6)}
-.sbl-name{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;color:#fff}
+.sbl-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;color:#fff}
 .sbl-tag{font-size:9px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);padding:2px 7px;border-radius:20px;font-weight:700;letter-spacing:.5px;border:1px solid rgba(255,255,255,.2)}
 .sbu{padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,.08)}
 .sba{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
@@ -95,7 +95,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 
 /* Mobile */
 #mob-hdr{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:var(--pdd);z-index:200;align-items:center;padding:0 14px;gap:10px}
-#mob-hdr-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;color:#fff}
+#mob-hdr-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;color:#fff}
 #mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--pdd);border-top:1px solid rgba(255,255,255,.1);z-index:200;padding:4px 0 env(safe-area-inset-bottom,4px)}
 .mob-nav-inner{display:flex;justify-content:space-around}
 .mob-nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px;border:none;background:transparent;color:rgba(255,255,255,.5);font-size:10px;font-weight:500;cursor:pointer;min-height:48px;transition:color .15s;font-family:'Plus Jakarta Sans',sans-serif}
@@ -105,14 +105,14 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 /* Page */
 .page{padding:26px 30px;animation:fadeUp .22s ease}
 .ph{margin-bottom:22px}
-.pt{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.3px;color:var(--tx)}
+.pt{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.3px;color:var(--tx)}
 .ps{font-size:13px;color:var(--mu);margin-top:3px}
 
 /* Cards */
 .card{background:var(--card);border:1px solid var(--bd2);border-radius:var(--rl);padding:20px 22px;box-shadow:var(--sh)}
 .ct{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px;color:var(--tx)}
 .sc{background:#fff;border:1px solid var(--bd2);border-radius:var(--r);padding:15px 16px;box-shadow:var(--sh)}
-.sv{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1.1;font-family:'Syne',sans-serif}
+.sv{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1.1;font-family:'Plus Jakarta Sans',sans-serif}
 .sl{font-size:12px;color:var(--mu);margin-top:3px}
 .si{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:9px}
 
@@ -224,7 +224,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .lnav{display:flex;justify-content:space-between;align-items:center;padding:16px 60px;position:sticky;top:0;background:rgba(6,12,30,.88);backdrop-filter:blur(20px);z-index:100;border-bottom:1px solid rgba(255,255,255,.06)}
 .lnav-logo{display:flex;align-items:center;gap:10px}
 .lnav-logo-mark{width:36px;height:36px;background:var(--p);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(29,107,243,.5)}
-.lnav-name{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:1.5px;color:#fff}
+.lnav-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;letter-spacing:1.5px;color:#fff}
 .lnav-btns{display:flex;align-items:center;gap:8px}
 .lnav .btn-land-outline{background:transparent;border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);border-radius:9px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif}
 .lnav .btn-land-outline:hover{border-color:var(--p);color:#fff;background:rgba(29,107,243,.15)}
@@ -252,7 +252,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 16px 7px 10px;border-radius:50px;border:1px solid rgba(29,107,243,.4);background:rgba(29,107,243,.12);backdrop-filter:blur(10px);font-size:12px;font-weight:600;color:var(--plight);margin-bottom:30px;cursor:default;width:fit-content}
 .hero-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--cy);animation:pulse 2s infinite;box-shadow:0 0 8px var(--cy)}
 
-.lh1{font-family:'Syne',sans-serif;font-size:clamp(44px,7vw,82px);font-weight:800;line-height:1.0;letter-spacing:-2px;margin:0 0 22px;color:#fff;max-width:800px}
+.lh1{font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(44px,7vw,82px);font-weight:800;line-height:1.0;letter-spacing:-2px;margin:0 0 22px;color:#fff;max-width:800px}
 .lh1 .accent{background:linear-gradient(135deg,var(--p),var(--cy),var(--in));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative}
 .lh1 .underline-anim{position:relative;display:inline-block}
 .lh1 .underline-anim::after{content:'';position:absolute;bottom:-3px;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--p),var(--cy));border-radius:2px;animation:lineGrow 1s ease .8s forwards}
@@ -281,7 +281,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .lstat:last-child{border-right:none}
 .lstat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--p),transparent);opacity:0;transition:opacity .3s}
 .lstat:hover::before{opacity:1}
-.lsv{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff,var(--plight));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:countUp .6s ease both}
+.lsv{font-family:'Plus Jakarta Sans',sans-serif;font-size:36px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff,var(--plight));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:countUp .6s ease both}
 .lsl{font-size:12px;color:rgba(255,255,255,.45);margin-top:5px;font-weight:500}
 
 /* How it works section */
@@ -302,7 +302,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .lfeat{background:#050A1C;padding:88px 60px;position:relative}
 .lfeat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(6,182,212,.3),transparent)}
 .feat-header{text-align:center;margin-bottom:50px}
-.feat-h2{font-family:'Syne',sans-serif;font-size:clamp(26px,3.5vw,40px);font-weight:800;letter-spacing:-.5px;margin-bottom:10px;color:#fff}
+.feat-h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(26px,3.5vw,40px);font-weight:800;letter-spacing:-.5px;margin-bottom:10px;color:#fff}
 .feat-sub{font-size:14px;color:rgba(255,255,255,.45)}
 .fc{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px 24px;transition:all .25s;background:rgba(255,255,255,.03);position:relative;overflow:hidden}
 .fc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(29,107,243,.06),transparent);opacity:0;transition:opacity .25s}
@@ -321,23 +321,23 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .mode-card:hover{border-color:var(--plight);transform:translateY(-3px);box-shadow:0 8px 24px rgba(29,107,243,.15)}
 .mode-card.selected{border-color:var(--p);background:var(--pl)}
 .mode-card.selected-now{border-color:var(--am);background:#FFF9EB}
-.mode-price{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px;margin:8px 0 4px}
+.mode-price{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px;margin:8px 0 4px}
 
 /* Service tier cards */
-.tier-card{border:2px solid var(--bd);border-radius:16px;padding:22px 20px;cursor:pointer;transition:all .2s;background:#fff;position:relative;overflow:hidden}
-.tier-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;transition:opacity .2s;opacity:0}
+.tier-card{border:2px solid var(--bd);border-radius:16px;padding:18px 14px;cursor:pointer;transition:all .2s;background:#fff;position:relative;overflow:hidden;min-width:0}
+.tier-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;transition:opacity .2s;opacity:0}
 .tier-card.tier-hot::before{background:linear-gradient(90deg,#EF4444,#F59E0B);opacity:1}
 .tier-card.tier-std::before{background:linear-gradient(90deg,var(--p),var(--cy));opacity:1}
 .tier-card.tier-eco::before{background:linear-gradient(90deg,var(--gr),#06B6D4);opacity:1}
-.tier-card:hover{transform:translateY(-4px);box-shadow:var(--shm)}
+.tier-card:hover{transform:translateY(-3px);box-shadow:var(--shm)}
 .tier-card.selected{border-color:var(--p);box-shadow:0 0 0 3px rgba(29,107,243,.15)}
-.tier-card.selected-hot{border-color:var(--re)}
-.tier-card.selected-std{border-color:var(--p)}
-.tier-card.selected-eco{border-color:var(--gr)}
-.tier-rec{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.3px}
-.tier-price{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.5px;margin:10px 0 3px}
-.tier-features{margin-top:12px;display:flex;flex-direction:column;gap:6px}
-.tier-feat-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mu)}
+.tier-card.selected-hot{border-color:var(--re);box-shadow:0 0 0 3px rgba(239,68,68,.15)}
+.tier-card.selected-std{border-color:var(--p);box-shadow:0 0 0 3px rgba(29,107,243,.15)}
+.tier-card.selected-eco{border-color:var(--gr);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+.tier-rec{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.2px;white-space:nowrap}
+.tier-price{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.5px;margin:6px 0 2px;white-space:nowrap}
+.tier-features{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.tier-feat-item{display:flex;align-items:flex-start;gap:5px;font-size:11px;color:var(--mu);line-height:1.4}
 
 /* ── MODE CARDS IN DARK (landing/booking in app context) ── */
 .mode-card-dark{border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.05)}
@@ -587,7 +587,8 @@ function renderLanding(){
       <div class="lnav-btns">
         <button class="btn-land-outline" onclick="login('shipper')">Người gửi hàng</button>
         <button class="btn-land-outline" onclick="login('driver')">Tài xế</button>
-        <button class="btn-land-primary" onclick="login('admin')">${ic('admin','#fff',13)} Quản trị</button>
+        <button class="btn-land-outline" onclick="login('admin')" style="border-color:rgba(139,92,246,.4);color:rgba(167,139,250,.9)">Quản trị</button>
+        <button class="btn-land-primary" onclick="login('shipper')">Đặt chuyến ngay →</button>
       </div>
     </nav>
 
@@ -630,9 +631,7 @@ function renderLanding(){
           <button class="btn-hero-sec" onclick="login('driver')">
             ${ic('star','#F59E0B',15)} Đăng ký làm tài xế
           </button>
-          <button class="btn-hero-sec" onclick="login('admin')" style="border-color:rgba(99,102,241,.4);color:rgba(167,139,250,.9)">
-            ${ic('admin','rgba(167,139,250,.9)',14)} Demo Admin
-          </button>
+
         </div>
 
         <div class="trust-chips" style="animation:fadeUp .6s ease .55s both">
@@ -648,7 +647,7 @@ function renderLanding(){
             <span style="font-size:12px;color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace">V001 — LIVE</span>
           </div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:6px">Nhiệt độ thùng xe</div>
-          <div style="font-size:48px;font-family:'Syne',sans-serif;font-weight:800;color:#fff;letter-spacing:-2px;margin-bottom:4px">-20.1°C</div>
+          <div style="font-size:48px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:#fff;letter-spacing:-2px;margin-bottom:4px">-20.1°C</div>
           <div style="font-size:12px;color:rgba(99,255,180,.8);margin-bottom:16px">✓ Trong ngưỡng an toàn (-22° → -18°)</div>
           <div style="height:2px;background:rgba(255,255,255,.08);border-radius:2px;margin-bottom:16px;overflow:hidden">
             <div style="height:100%;width:62%;background:linear-gradient(90deg,#1D6BF3,#06B6D4);border-radius:2px"></div>
@@ -728,7 +727,7 @@ function renderLanding(){
       <div class="lcta">
         <div style="position:relative;z-index:1">
           <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:12px">Sẵn sàng?</div>
-          <h3 style="font-family:'Syne',sans-serif;font-size:clamp(24px,3.5vw,38px);font-weight:800;color:#fff;margin-bottom:12px;letter-spacing:-.5px">Bắt đầu gửi hàng miễn phí ngay hôm nay</h3>
+          <h3 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(24px,3.5vw,38px);font-weight:800;color:#fff;margin-bottom:12px;letter-spacing:-.5px">Bắt đầu gửi hàng miễn phí ngay hôm nay</h3>
           <p style="color:rgba(255,255,255,.6);margin-bottom:32px;font-size:14px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.8">300+ tài xế và 50+ doanh nghiệp đang tin dùng LOGIFRESH mỗi ngày. Không cần thẻ tín dụng.</p>
           <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
             <button class="btn-hero-primary" onclick="login('shipper')" style="animation:none;box-shadow:0 4px 20px rgba(0,0,0,.3)">
@@ -882,7 +881,7 @@ function driverDB(){
           <div class="hs mb8" style="font-size:12px;color:var(--mu)">${ic('clock','var(--mu)',13)} ETA: <strong style="color:var(--tx)">${eta.str}</strong><div class="sp"></div>${ic('pin','var(--mu)',13)} ${trip.progress}%</div>
           <div class="prog mb10"><div class="prog-f" style="width:${trip.progress}%"></div></div>
           <div style="background:var(--pll);border:1px solid var(--bd2);border-radius:10px;padding:14px">
-            <div class="hs mb6"><span style="font-size:12px;font-weight:700">${ic('thermo','var(--p)')} Nhiệt độ</span><div class="sp"></div><span id="lt" style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;color:var(--p)">${trip.tempNow}°C</span></div>
+            <div class="hs mb6"><span style="font-size:12px;font-weight:700">${ic('thermo','var(--p)')} Nhiệt độ</span><div class="sp"></div><span id="lt" style="font-size:22px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;color:var(--p)">${trip.tempNow}°C</span></div>
             ${tempBar(trip.tempNow,trip.lo,trip.hi)}
             <div style="margin-top:10px;font-size:11px;color:var(--mu);margin-bottom:5px">Lịch sử 10 điểm (30s/lần)</div>
             ${spark(temps,trip.lo,trip.hi)}
@@ -890,7 +889,7 @@ function driverDB(){
         </div>
         <div class="card">
           <div class="ct">${ic('chart','var(--p)')} Thu nhập hôm nay</div>
-          <div style="font-size:30px;font-weight:800;font-family:'Syne',sans-serif;letter-spacing:-1px;color:var(--p)">${fmt(840000)}</div>
+          <div style="font-size:30px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-1px;color:var(--p)">${fmt(840000)}</div>
           <div style="margin-top:14px;font-size:13px">
             ${[['Chuyến hoàn thành','2 chuyến'],['Quãng đường','187 km'],['Cold Score','4.8 ↑'],['Gói đã chạy','Tiêu chuẩn x2']].map(([l,v])=>`<div class="hs" style="padding:7px 0;border-bottom:1px solid var(--bd2)"><span style="color:var(--mu)">${l}</span><div class="sp"></div><span style="font-weight:600">${v}</span></div>`).join('')}
           </div>
@@ -901,7 +900,7 @@ function driverDB(){
           <div class="ct">${ic('bolt','#F59E0B')} Đơn chiều về (Backhaul)</div>
           ${[{from:'Cần Thơ',to:'TP.HCM',g:'Trái cây tươi',w:'2.1T',p:1950000,tier:'std',ok:true},{from:'Cần Thơ',to:'Bình Dương',g:'Cá tra fillet đông',w:'3.5T',p:2600000,tier:'hot',ok:true},{from:'Cần Thơ',to:'Đồng Nai',g:'Rau muống sạch',w:'1.2T',p:1100000,tier:'eco',ok:false}].map((l,i)=>`
             <div id="l${i}" style="border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:9px">
-              <div class="hs mb5"><span style="font-size:12px;font-weight:700">${l.from} → ${l.to}</span><div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p);font-family:'Syne',sans-serif">${fmt(l.p)}</span></div>
+              <div class="hs mb5"><span style="font-size:12px;font-weight:700">${l.from} → ${l.to}</span><div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(l.p)}</span></div>
               <div style="font-size:11px;color:var(--mu);margin-bottom:8px">${l.g} · ${l.w} · Gói ${TIERS[l.tier]?.label} ${l.ok?`<span style="color:var(--gr);font-weight:600">✓ Tương thích nhiệt</span>`:`<span style="color:var(--am);font-weight:600">⚠ Kiểm tra nhiệt</span>`}</div>
               <button id="lb${i}" class="btn btn-o btn-sm btn-fw" onclick="acceptLoad(${i})">Nhận đơn</button>
             </div>`).join('')}
@@ -910,7 +909,7 @@ function driverDB(){
           <div class="ct">${ic('pack','var(--p)')} Chuyến của tôi</div>
           ${TRIPS.filter(t=>t.vehicleId==='V001').map(t=>`
             <div class="tc mb8">
-              <div class="hs mb5"><span class="mono" style="font-size:12px;font-weight:600;color:var(--pd)">${t.id}</span>${bd(t.status==='active'?'● Live':'✓ Xong',t.status==='active'?'p':'b')}<div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p);font-family:'Syne',sans-serif">${fmt(t.price)}</span></div>
+              <div class="hs mb5"><span class="mono" style="font-size:12px;font-weight:600;color:var(--pd)">${t.id}</span>${bd(t.status==='active'?'● Live':'✓ Xong',t.status==='active'?'p':'b')}<div class="sp"></div><span style="font-size:13px;font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(t.price)}</span></div>
               <div style="font-size:12px;color:var(--mu)">${t.from} → ${t.to}</div>
               <div style="font-size:11px;color:var(--mu);">${t.goods} · ${t.weight}T ${t.mode==='share'?'· Ghép đơn':''} · ${TIERS[t.tier]?.icon} ${TIERS[t.tier]?.label}</div>
               ${t.status==='active'?`<div class="prog mt8"><div class="prog-f" style="width:${t.progress}%"></div></div><div class="hs mt5" style="font-size:11px;color:var(--mu)"><span>${t.progress}%</span><div class="sp"></div><span>Nhiệt: <strong id="dtemp-${t.id}" style="color:var(--p)">${t.tempNow}°C</strong></span></div>`:''}
@@ -980,7 +979,7 @@ function shipperDB(){
           <div class="scan-wrap">
             <div class="scan-line"></div>
             <div style="font-size:36px;margin-bottom:14px">🔍</div>
-            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:7px">Đang quét hệ thống...</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;margin-bottom:7px">Đang quét hệ thống...</div>
             <div id="scan-status" style="font-size:13px;color:rgba(99,255,200,.8);margin-bottom:18px">Kiểm tra xe sẵn sàng trong bán kính 20km</div>
             <div style="display:flex;gap:5px;justify-content:center">
               <div class="ldot"></div><div class="ldot"></div><div class="ldot"></div>
@@ -1021,7 +1020,7 @@ function shipperDB(){
                   <div style="width:38px;height:38px;border-radius:10px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">🚛</div>
                   <div><div style="font-weight:800;font-size:14px">Đi Riêng</div><div style="font-size:11px;color:var(--mu)">Nhanh · Xe đến ngay</div></div>
                 </div>
-                <div class="mode-price" id="price-solo" style="color:#D97706;font-family:'Syne',sans-serif">—</div>
+                <div class="mode-price" id="price-solo" style="color:#D97706;font-family:'Plus Jakarta Sans',sans-serif">—</div>
                 <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Bao xe · Không chờ</div>
                 ${[`✓ Xe đến ngay theo gói đã chọn`,`✓ Không ghép đơn khác`,`✓ Đi thẳng điểm nhận`].map(t=>`<div style="font-size:11px;color:var(--mu);margin-bottom:3px">${t}</div>`).join('')}
               </div>
@@ -1030,7 +1029,7 @@ function shipperDB(){
                   <div style="width:38px;height:38px;border-radius:10px;background:var(--pl);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">🔗</div>
                   <div><div style="font-weight:800;font-size:14px">Đi Ghép</div><div style="font-size:11px;color:var(--p);font-weight:700">Giảm thêm 30-40%</div></div>
                 </div>
-                <div class="mode-price" id="price-share" style="color:var(--p);font-family:'Syne',sans-serif">—</div>
+                <div class="mode-price" id="price-share" style="color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">—</div>
                 <div style="font-size:11px;color:var(--mu);margin-bottom:10px">Chờ tối đa +10 phút gom đơn</div>
                 ${[`✓ Tiết kiệm thêm 30–40%`,`✓ Nhiệt độ tương thích đảm bảo`,`✓ Đến đúng giờ (±10p)`].map(t=>`<div style="font-size:11px;color:var(--mu);margin-bottom:3px">${t}</div>`).join('')}
               </div>
@@ -1046,7 +1045,7 @@ function shipperDB(){
           <div class="scan-wrap" style="margin-bottom:10px">
             <div class="scan-line"></div>
             <div style="font-size:30px;margin-bottom:12px">⏳</div>
-            <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:6px">Không tìm thấy xe ngay</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;margin-bottom:6px">Không tìm thấy xe ngay</div>
             <div style="font-size:13px;color:rgba(147,187,252,.8)">Đã quét 15 giây — không có xe trong bán kính 20km</div>
           </div>
           <div class="vs">
@@ -1055,7 +1054,7 @@ function shipperDB(){
                 <div style="width:38px;height:38px;border-radius:10px;background:var(--pl);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">⏰</div>
                 <div><div style="font-weight:800;font-size:14px">Lựa chọn 1 — Treo đơn chờ ghép</div><div style="font-size:11px;color:var(--p);font-weight:600">Ưu tiên GIÁ · Rẻ nhất</div></div>
               </div>
-              <div id="nf-price-wait" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--p);margin-bottom:7px">—</div>
+              <div id="nf-price-wait" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:var(--p);margin-bottom:7px">—</div>
               <div style="font-size:12px;color:var(--mu);background:var(--pll);border-radius:8px;padding:10px 12px">Đơn giữ trên sàn <strong>5 phút</strong>. Khi có xe cùng hướng → ghép tự động, thông báo ngay.</div>
             </div>
             <div class="mode-card" id="nf-card-route" onclick="selectNoFoundMode('route')" style="background:#fff">
@@ -1063,7 +1062,7 @@ function shipperDB(){
                 <div style="width:38px;height:38px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">📍</div>
                 <div><div style="font-weight:800;font-size:14px">Lựa chọn 2 — Tuyến tối ưu</div><div style="font-size:11px;color:#06B6D4;font-weight:600">Ưu tiên THỜI GIAN · Có xe ngay</div></div>
               </div>
-              <div id="nf-price-route" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#0891B2;margin-bottom:7px">—</div>
+              <div id="nf-price-route" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:#0891B2;margin-bottom:7px">—</div>
               <div style="font-size:12px;color:var(--mu);background:#F0FDFF;border-radius:8px;padding:10px 12px">Điều chỉnh điểm đón ra <strong>đầu đường lớn gần nhất (~100m)</strong> để tài xế vào được ngay.</div>
             </div>
             <button id="btn-nofound-confirm" class="btn btn-p btn-fw" style="padding:12px;font-size:14px;display:none" onclick="confirmNoFoundBooking()">Xác nhận →</button>
@@ -1074,7 +1073,7 @@ function shipperDB(){
         <div id="step-success" style="display:none">
           <div class="card" style="border:2px solid var(--p);background:var(--pl);text-align:center;padding:32px 22px">
             <div style="font-size:48px;margin-bottom:14px">🎉</div>
-            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--pd);margin-bottom:8px">Đặt chuyến thành công!</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--pd);margin-bottom:8px">Đặt chuyến thành công!</div>
             <div id="success-detail" style="font-size:13px;color:var(--p);margin-bottom:18px;line-height:1.7"></div>
             <button class="btn btn-p btn-sm" onclick="setNav('orders')">Xem đơn hàng →</button>
           </div>
@@ -1106,13 +1105,13 @@ function renderTierCards(){
   return Object.entries(TIERS).map(([key,t])=>`
     <div class="tier-card tier-${key}" id="tier-${key}" onclick="selectTier('${key}')">
       ${key==='std'?`<div class="tier-rec" style="background:var(--p);color:#fff">⭐ Phổ biến</div>`:''}
-      <div style="font-size:28px;margin-bottom:8px">${t.icon}</div>
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--tx);margin-bottom:2px">${t.label}</div>
-      <div style="font-size:11px;color:${t.color};font-weight:600;margin-bottom:3px">${t.eta}</div>
+      <div style="font-size:24px;margin-bottom:8px;line-height:1">${t.icon}</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:14px;color:var(--tx);margin-bottom:2px;white-space:nowrap">${t.label}</div>
+      <div style="font-size:11px;color:${t.color};font-weight:700;margin-bottom:2px">${t.eta}</div>
       <div class="tier-price" id="tier-price-${key}" style="color:${t.color}">—</div>
-      <div style="font-size:11px;color:var(--mu);margin-bottom:10px;line-height:1.5">${t.desc}</div>
+      <div style="font-size:11px;color:var(--mu);margin-bottom:8px;line-height:1.5">${t.desc}</div>
       <div class="tier-features">
-        ${t.features.map(f=>`<div class="tier-feat-item">${ic('check',t.color,12)} <span>${f}</span></div>`).join('')}
+        ${t.features.map(f=>`<div class="tier-feat-item">${ic('check',t.color,11)} <span>${f}</span></div>`).join('')}
       </div>
     </div>`).join('');
 }
@@ -1242,7 +1241,7 @@ function adminDB(){
     </div></div>
     <div class="g6 mb14">
       ${[['truck','5','Xe đang chạy','var(--p)'],['pack','18','Đơn hôm nay','#06B6D4'],['users','5','KH giao dịch','#8B5CF6'],['warn','1','Cảnh báo nhiệt','#EF4444'],['coin',fmt(32500000),'Doanh thu hôm nay','var(--gr)'],['check','97.3%','Nhiệt OK','var(--p)']].map(([i,v,l,c])=>`
-        <div class="sc" style="cursor:pointer" ${i==='pack'?`onclick="setNav('matching')"`:''}><div class="si" style="background:${c}18">${ic(i,c,16)}</div><div class="sv" style="color:${c};font-size:17px;font-family:'Syne',sans-serif">${v}</div><div class="sl">${l}</div></div>`).join('')}
+        <div class="sc" style="cursor:pointer" ${i==='pack'?`onclick="setNav('matching')"`:''}><div class="si" style="background:${c}18">${ic(i,c,16)}</div><div class="sv" style="color:${c};font-size:17px;font-family:'Plus Jakarta Sans',sans-serif">${v}</div><div class="sl">${l}</div></div>`).join('')}
     </div>
     ${newCount>0?`
     <div style="background:linear-gradient(135deg,#FFF9EB,#FFFBF0);border:2px solid #F59E0B;border-radius:14px;padding:16px 20px;margin-bottom:16px;cursor:pointer" onclick="setNav('matching')">
@@ -1297,7 +1296,7 @@ function adminDB(){
               </div>
               <div class="sp"></div>
               <div style="text-align:right">
-                <div style="font-size:12px;font-weight:800;color:var(--p);font-family:'Syne',sans-serif">${fmt(o.price)}</div>
+                <div style="font-size:12px;font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(o.price)}</div>
                 <div style="font-size:10px;color:var(--mu)">${o.time}</div>
                 <div style="font-size:10px;color:${o.direction==='north'?'var(--p)':'#8B5CF6'};font-weight:700">${o.direction==='north'?'⬆ Bắc':'⬇ Nam'}</div>
               </div>
@@ -1325,7 +1324,7 @@ function openOrderPanel(orderId){
   panel.innerHTML=`
     <div style="padding:22px 22px 90px">
       <div class="hs mb18">
-        <div><div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">${order.id}</div>
+        <div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800">${order.id}</div>
           <div style="font-size:12px;color:var(--mu)">${order.shipper} · ${order.time}</div></div>
         <div class="sp"></div>
         <button onclick="closePanel()" style="background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:7px;cursor:pointer;display:flex">${ic('x','var(--mu)',16)}</button>
@@ -1405,7 +1404,7 @@ function matchingPage(){
           ${pending.length===0?`<div style="text-align:center;padding:22px;color:var(--mu);font-size:13px">Không có đơn chờ</div>`
           :pending.map(o=>`
             <div style="border:1.5px solid var(--bd);border-radius:11px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--p)';this.style.background='var(--pll)'" onmouseout="this.style.borderColor='var(--bd)';this.style.background='#fff'" onclick="openOrderPanel('${o.id}')">
-              <div class="hs mb6"><span class="mono" style="font-size:12px;font-weight:700;color:var(--pd)">${o.id}</span>${bd('Chờ ghép','a')}<div class="sp"></div><span style="font-size:12px;font-weight:800;color:var(--p);font-family:'Syne',sans-serif">${fmt(o.price)}</span></div>
+              <div class="hs mb6"><span class="mono" style="font-size:12px;font-weight:700;color:var(--pd)">${o.id}</span>${bd('Chờ ghép','a')}<div class="sp"></div><span style="font-size:12px;font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(o.price)}</span></div>
               <div style="font-size:13px;font-weight:600;margin-bottom:3px">${o.goods} · ${o.weight}T</div>
               <div style="font-size:11px;color:var(--mu);margin-bottom:9px">${o.from} → ${o.to}</div>
               <div class="hs" style="gap:5px;flex-wrap:wrap">
@@ -1507,7 +1506,7 @@ function ordersPage(){
           ${bd(t.mode==='share'?'Ghép đơn':'Bao xe',t.mode==='share'?'p':'gray')}
           ${t.tier?bd(TIERS[t.tier]?.icon+TIERS[t.tier]?.label,'cy'):''}
           <div class="sp"></div>
-          <span style="font-weight:800;color:var(--p);font-family:'Syne',sans-serif">${fmt(t.price)}</span>
+          <span style="font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(t.price)}</span>
         </div>
         <div class="g2 mb10" style="gap:9px">
           <div><div class="lbl">Tuyến</div><div style="font-size:13px;font-weight:600">${t.from} → ${t.to}</div></div>
@@ -1539,7 +1538,7 @@ function customersPage(){
           <td style="font-weight:700">${c.name}</td>
           <td style="font-size:12px;font-family:'JetBrains Mono',monospace">${c.phone}</td>
           <td style="font-weight:700;text-align:center">${c.trips}</td>
-          <td style="font-weight:800;color:var(--p);font-family:'Syne',sans-serif">${fmt(c.spent)}</td>
+          <td style="font-weight:800;color:var(--p);font-family:'Plus Jakarta Sans',sans-serif">${fmt(c.spent)}</td>
           <td>${bd(c.tier,c.tier==='Bạch Kim'?'pu':c.tier==='Vàng'?'a':c.tier==='Bạc'?'b':'gray')}</td>
           <td>${bd(c.status==='active'?'● Active':'Inactive',c.status==='active'?'p':'gray')}</td>
         </tr>`).join('')}</tbody>
