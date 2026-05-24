@@ -232,7 +232,7 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .lnav .btn-land-primary:hover{background:var(--pd);transform:translateY(-1px)}
 
 /* HERO */
-.lhero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:100px 60px 80px;overflow:hidden}
+.lhero{position:relative;min-height:100vh;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:40px;padding:100px 60px 80px;overflow:hidden}
 
 /* Star field */
 .stars-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
@@ -267,12 +267,12 @@ button,select,input,textarea{font-family:'Plus Jakarta Sans',sans-serif;outline:
 .btn-hero-sec:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35);transform:translateY(-2px)}
 
 /* Trust chips */
-.trust-chips{display:flex;flex-wrap:wrap;gap:8px}
+.trust-chips{display:flex;flex-wrap:wrap;gap:8px;max-width:600px}
 .trust-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:50px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px;font-weight:500;color:rgba(255,255,255,.7);backdrop-filter:blur(8px)}
 .trust-chip .dot-g{width:5px;height:5px;border-radius:50%;background:var(--gr);box-shadow:0 0 6px var(--gr)}
 
 /* Hero right — floating app card */
-.hero-visual{position:absolute;right:60px;top:50%;transform:translateY(-50%);width:340px}
+.hero-visual{width:340px;flex-shrink:0;position:relative}
 .hero-app-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;backdrop-filter:blur(20px);animation:float 6s ease-in-out infinite;box-shadow:0 20px 60px rgba(0,0,0,.4)}
 
 /* Stats section */
@@ -604,7 +604,7 @@ function renderLanding(){
       <div class="orbit-ring" style="width:500px;height:500px;top:50%;left:55%;transform:translate(-50%,-50%);opacity:.4"></div>
       <div class="orbit-ring" style="width:700px;height:700px;top:50%;left:55%;transform:translate(-50%,-50%);opacity:.2"></div>
 
-      <div style="position:relative;z-index:2;max-width:1100px;width:100%">
+      <div style="position:relative;z-index:2;flex:1;min-width:0;max-width:680px">
         <div class="hero-badge" style="animation:fadeUp .5s ease .1s both">
           <div class="hero-badge-dot"></div>
           <span>🇻🇳 Nền tảng vận tải lạnh nông thủy hải sản hàng đầu Việt Nam</span>
